@@ -1,1 +1,0 @@
-# Backend de l'application de gestion des emargements
