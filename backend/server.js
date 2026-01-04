@@ -1,71 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const { testConnection, checkPoolHealth } = require('./src/config/database');
+// server.js
+const app = require('./src/app');
+const http = require('http');
+const socketIo = require('socket.io');
+const { testConnection } = require('./src/config/database');
+
 require('dotenv').config();
 
-const app = express();
-
-// ============================================
-// MIDDLEWARE
-// ============================================
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ============================================
-// ROUTES
-// ============================================
-app.get('/', (req, res) => {
-  res.json({ 
-    message: '🏫 API Gestion des Émargements', 
-    status: 'online',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: '✅ Backend opérationnel',
-    timestamp: new Date().toISOString(),
-    service: 'attendance-api'
-  });
-});
-
-// Route pour vérifier l'état de la DB
-app.get('/api/health/db', async (req, res) => {
-  try {
-    const dbHealthy = await testConnection();
-    const poolStats = await checkPoolHealth();
-    
-    res.json({
-      success: dbHealthy,
-      database: dbHealthy ? 'connected' : 'disconnected',
-      pool: poolStats,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// ============================================
-// DÉMARRAGE DU SERVEUR
-// ============================================
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
     console.log('='.repeat(50));
-    console.log('🚀 DÉMARRAGE SERVEUR ATTENDANCE');
+    console.log('🚀 DÉMARRAGE SERVEUR ATTENDANCE - JOUR 2');
     console.log('='.repeat(50));
     
     // 1. Tester la connexion DB
@@ -81,13 +27,55 @@ async function startServer() {
       process.exit(1);
     }
     
-    // 2. Démarrer le serveur Express
-    app.listen(PORT, () => {
+    // 2. Créer le serveur HTTP avec l'app Express
+    const server = http.createServer(app);
+    
+    // 3. Configurer WebSocket
+    const io = socketIo(server, {
+      cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+      }
+    });
+    
+    // Gestion WebSocket
+    io.on('connection', (socket) => {
+      console.log('🔌 Nouveau client connecté:', socket.id);
+      
+      // Rejoindre une salle d'examen
+      socket.on('join-exam', (examId) => {
+        socket.join(`exam-${examId}`);
+        console.log(`📚 Socket ${socket.id} a rejoint la salle exam-${examId}`);
+      });
+      
+      socket.on('disconnect', () => {
+        console.log('🔌 Client déconnecté:', socket.id);
+      });
+    });
+    
+    // Stocker io dans l'app pour y accéder depuis les contrôleurs
+    app.set('io', io);
+    
+    // 4. Démarrer le serveur
+    server.listen(PORT, () => {
       console.log(`📡 Serveur démarré sur: http://localhost:${PORT}`);
       console.log(`🌐 Environnement: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🗄️  Base de données: PostgreSQL (Neon.tech)`);
+      console.log(`🔐 Authentification: JWT activée`);
       console.log('='.repeat(50));
       console.log('✅ PRÊT À RECEVOIR DES REQUÊTES');
+      console.log('='.repeat(50));
+      console.log('📋 Routes AUTH disponibles:');
+      console.log('   POST /api/auth/login       - Connexion');
+      console.log('   POST /api/auth/register    - Inscription');
+      console.log('   POST /api/auth/refresh     - Rafraîchir token');
+      console.log('   GET  /api/auth/profile     - Profil (protégé)');
+      console.log('   POST /api/auth/logout      - Déconnexion');
+      console.log('   GET  /api/auth/test-auth   - Test auth (protégé)');
+      console.log('='.repeat(50));
+      console.log('👤 Comptes de test:');
+      console.log('   Email: admin@univ.fr / Mot de passe: password123');
+      console.log('   Email: surveillant@univ.fr / Mot de passe: password123');
       console.log('='.repeat(50));
     });
     
@@ -98,17 +86,13 @@ async function startServer() {
 }
 
 // Gestion des arrêts propres
-process.on('SIGTERM', async () => {
-  console.log('🛑 Signal SIGTERM reçu, arrêt propre...');
-  const { close } = require('./src/config/database');
-  await close();
+process.on('SIGTERM', () => {
+  console.log('🛑 Signal SIGTERM reçu, arrêt...');
   process.exit(0);
 });
 
-process.on('SIGINT', async () => {
-  console.log('🛑 Signal SIGINT reçu (Ctrl+C), arrêt propre...');
-  const { close } = require('./src/config/database');
-  await close();
+process.on('SIGINT', () => {
+  console.log('🛑 Signal SIGINT reçu (Ctrl+C), arrêt...');
   process.exit(0);
 });
 

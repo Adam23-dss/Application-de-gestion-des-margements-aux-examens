@@ -2,25 +2,16 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// ============================================
-// CONFIGURATION DU POOL DE CONNEXIONS
-// ============================================
+// Configuration du pool de connexions PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Configuration SSL obligatoire pour Neon.tech
-  ssl: process.env.NODE_ENV === 'production' 
-    ? { rejectUnauthorized: true } 
-    : { rejectUnauthorized: false },
-  
-  // Optimisations de performance
-  max: 20,                    // Nombre maximum de connexions
-  idleTimeoutMillis: 30000,   // Fermer les connexions inactives après 30s
-  connectionTimeoutMillis: 5000, // Timeout de connexion après 5s
+  ssl: { rejectUnauthorized: false },
+  // Augmente les timeouts
+  connectionTimeoutMillis: 10000, // 10 secondes au lieu de 5
+  idleTimeoutMillis: 60000, // 1 minute
+  max: 10 // Réduit le nombre max de connexions
 });
-
-// ============================================
-// TEST DE CONNEXION
-// ============================================
+// Test de connexion au démarrage
 const testConnection = async () => {
   let client;
   try {
@@ -70,9 +61,7 @@ const testConnection = async () => {
   }
 };
 
-// ============================================
-// ÉVÉNEMENTS DU POOL (logging)
-// ============================================
+// Événements du pool
 pool.on('connect', () => {
   if (process.env.NODE_ENV === 'development') {
     console.log('🔗 Nouvelle connexion DB établie');
@@ -81,102 +70,15 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('💥 Erreur inattendue du pool PostgreSQL:', err.message);
-  
-  // Ne pas crasher l'app en production
-  if (process.env.NODE_ENV === 'production') {
-    console.error('Erreur du pool, mais on continue...');
-  }
 });
 
-pool.on('remove', () => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔌 Connexion DB fermée');
-  }
-});
-
-// ============================================
-// FONCTION POUR VÉRIFIER L'ÉTAT DU POOL
-// ============================================
-const checkPoolHealth = async () => {
-  try {
-    const stats = {
-      total: pool.totalCount,
-      idle: pool.idleCount,
-      waiting: pool.waitingCount
-    };
-    
-    console.log('📊 Statistiques du pool DB:');
-    console.log(`   Connexions totales: ${stats.total}`);
-    console.log(`   Connexions inactives: ${stats.idle}`);
-    console.log(`   Requêtes en attente: ${stats.waiting}`);
-    
-    return stats;
-  } catch (error) {
-    console.error('Erreur lors de la vérification du pool:', error);
-    return null;
-  }
-};
-
-// ============================================
-// EXPORT DES FONCTIONS
-// ============================================
+// Fonctions exportées
 module.exports = {
-  // Fonction de base pour exécuter des requêtes
-  query: (text, params) => {
-    const start = Date.now();
-    
-    return pool.query(text, params)
-      .then((result) => {
-        const duration = Date.now() - start;
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`📝 Requête exécutée en ${duration}ms:`, text.substring(0, 50) + '...');
-        }
-        return result;
-      })
-      .catch((error) => {
-        console.error('❌ Erreur requête SQL:', {
-          query: text.substring(0, 100),
-          params,
-          error: error.message
-        });
-        throw error;
-      });
-  },
-  
-  // Pour les transactions
+  query: (text, params) => pool.query(text, params),
   getClient: async () => {
     const client = await pool.connect();
-    
-    // Ajouter du logging pour le client
-    const originalQuery = client.query;
-    const originalRelease = client.release;
-    
-    client.query = (...args) => {
-      console.log('🔍 Client query:', args[0].substring(0, 80) + '...');
-      return originalQuery.apply(client, args);
-    };
-    
-    client.release = () => {
-      console.log('🔄 Client released');
-      return originalRelease.apply(client);
-    };
-    
     return client;
   },
-  
-  // Pour tester la connexion
   testConnection,
-  
-  // Pour vérifier l'état du pool
-  checkPoolHealth,
-  
-  // Le pool pour accès direct (rarement nécessaire)
-  pool,
-  
-  // Fermer proprement toutes les connexions
-  close: async () => {
-    console.log('🛑 Fermeture du pool de connexions...');
-    await pool.end();
-    console.log('✅ Pool fermé');
-  }
+  pool
 };

@@ -50,8 +50,8 @@ SELECT
 
 -- Utilisateurs (mot de passe: password123)
 INSERT INTO users (email, password, first_name, last_name, role, ufr, department) VALUES
-('admin@univ.fr', '$2b$10$N9qo8uLOickgx2ZMRZoMye5G6WZWJKNBqL8JYJ2NfZ.7QKQYQZ/yK', 'Admin', 'System', 'admin', 'Sciences', 'Informatique'),
-('surveillant@univ.fr', '$2b$10$N9qo8uLOickgx2ZMRZoMye5G6WZWJKNBqL8JYJ2NfZ.7QKQYQZ/yK', 'Jean', 'Dupont', 'supervisor', 'Sciences', 'Mathématiques')
+('admin@univ.fr', '$2b$10$wNcNq6ziNGbkX.Nrl7PexOXTCafatx/Yry2Z6q/vY.wk6D6dH8cZK', 'Admin', 'System', 'admin', 'Sciences', 'Informatique'),
+('surveillant@univ.fr', '$2b$10$Fu8Onz5KcGZHG9.cmtSyN..betOjLsMq6L19erUAfXdWcFZMMjDrm', 'Jean', 'Dupont', 'supervisor', 'Sciences', 'Mathématiques')
 ON CONFLICT (email) DO NOTHING;
 
 -- Étudiants
