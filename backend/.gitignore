@@ -2,4 +2,7 @@ node_modules/
 .env
 *.log
 .DS_Store
+# Ignorer localement le frontend
+frontend/
+!backend/
 .vscode/
