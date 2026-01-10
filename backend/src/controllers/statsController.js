@@ -82,7 +82,7 @@ class StatsController {
     }
   }
 
-  // GET /api/stats/daily/:date - Statistiques journalières
+  // GET /api/stats/daily/:date? - Statistiques journalières
   static async getDailyStats(req, res, next) {
     try {
       const date = req.params.date || new Date().toISOString().split('T')[0];

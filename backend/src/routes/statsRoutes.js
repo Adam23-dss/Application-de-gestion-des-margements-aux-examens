@@ -4,7 +4,7 @@ const statsController = require('../controllers/statsController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 // Toutes les routes protégées
-router.use(authMiddleware.authenticate);
+router.use(authMiddleware.authenticate); // CORRECTION: authenticateToken
 
 /**
  * @route   GET /api/stats/dashboard
@@ -12,7 +12,7 @@ router.use(authMiddleware.authenticate);
  * @access  Private (supervisor, admin)
  */
 router.get('/dashboard',
-  authMiddleware.authorize('supervisor', 'admin'),
+  authMiddleware.authorize('supervisor', 'admin'), // CORRECTION: authorize
   statsController.getDashboardStats
 );
 
@@ -22,17 +22,23 @@ router.get('/dashboard',
  * @access  Private (supervisor, admin)
  */
 router.get('/exam/:id',
-  authMiddleware.authorize('supervisor', 'admin'),
+  authMiddleware.authorize('supervisor', 'admin'), // CORRECTION: authorize
   statsController.getExamStats
 );
 
 /**
- * @route   GET /api/stats/daily/:date?
+ * @route   GET /api/stats/daily
+ * @route   GET /api/stats/daily/:date
  * @desc    Statistiques journalières (date optionnelle)
  * @access  Private (supervisor, admin)
  */
-router.get('/daily/:date?',
-  authMiddleware.authorize('supervisor', 'admin'),
+router.get('/daily', // Route sans paramètre
+  authMiddleware.authorize('supervisor', 'admin'), // CORRECTION: authorize
+  statsController.getDailyStats
+);
+
+router.get('/daily/:date', // Route avec paramètre
+  authMiddleware.authorize('supervisor', 'admin'), // CORRECTION: authorize
   statsController.getDailyStats
 );
 
@@ -42,7 +48,7 @@ router.get('/daily/:date?',
  * @access  Private (supervisor, admin)
  */
 router.get('/student/:id',
-  authMiddleware.authorize('supervisor', 'admin'),
+  authMiddleware.authorize('supervisor', 'admin'), // CORRECTION: authorize
   statsController.getStudentStats
 );
 
@@ -52,7 +58,7 @@ router.get('/student/:id',
  * @access  Private (admin only)
  */
 router.get('/ufr',
-  authMiddleware.authorize('admin'),
+  authMiddleware.authorize('admin'), // CORRECTION: authorize
   statsController.getUfrStats
 );
 
