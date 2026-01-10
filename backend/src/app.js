@@ -47,7 +47,9 @@ app.get('/api/test', (req, res) => {
 const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const examRoutes = require('./routes/examRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
+app.use('/api/attendance', attendanceRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/auth', authRoutes);

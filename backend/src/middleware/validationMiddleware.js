@@ -335,3 +335,54 @@ exports.validateExamUpdate = (req, res, next) => {
   req.validatedData = value;
   next();
 };
+
+// Schéma pour validation de présence
+const attendanceSchema = Joi.object({
+  exam_id: Joi.number()
+    .integer()
+    .required()
+    .messages({
+      'any.required': 'ID examen requis'
+    }),
+    
+  student_code: Joi.string()
+    .pattern(/^[A-Z0-9]{4,20}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Code étudiant invalide',
+      'any.required': 'Code étudiant requis'
+    }),
+    
+  status: Joi.string()
+    .valid('present', 'absent', 'late', 'excused')
+    .default('present'),
+    
+  validation_method: Joi.string()
+    .valid('manual', 'qr_code', 'nfc')
+    .default('manual')
+});
+
+// Middleware de validation pour présence
+exports.validateAttendance = (req, res, next) => {
+  const { error, value } = attendanceSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+  
+  if (error) {
+    const errors = error.details.map(detail => ({
+      field: detail.path[0],
+      message: detail.message
+    }));
+    
+    return res.status(400).json({
+      success: false,
+      error: 'VALIDATION_ERROR',
+      message: 'Erreur de validation des données de présence',
+      errors: errors
+    });
+  }
+  
+  req.validatedData = value;
+  next();
+};

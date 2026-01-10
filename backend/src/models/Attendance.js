@@ -1,0 +1,77 @@
+const db = require('../config/database');
+
+class Attendance {
+  // Valider une présence
+  static async validate(data) {
+    const { exam_id, student_id, supervisor_id, status = 'present', validation_method = 'manual' } = data;
+    
+    const query = `
+      INSERT INTO attendance (exam_id, student_id, supervisor_id, status, validation_method, validation_time)
+      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+      ON CONFLICT (exam_id, student_id) 
+      DO UPDATE SET 
+        status = $4,
+        supervisor_id = $3,
+        validation_method = $5,
+        validation_time = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING id, exam_id, student_id, status, validation_time, validation_method
+    `;
+    
+    const values = [exam_id, student_id, supervisor_id, status, validation_method];
+    
+    try {
+      const result = await db.query(query, values);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Attendance.validate error:', error);
+      
+      if (error.code === '23503') {
+        if (error.constraint.includes('exam_id')) throw new Error('Examen non trouvé');
+        if (error.constraint.includes('student_id')) throw new Error('Étudiant non trouvé');
+        if (error.constraint.includes('supervisor_id')) throw new Error('Surveillant non trouvé');
+      }
+      throw error;
+    }
+  }
+
+  // Récupérer les présences d'un examen
+  static async findByExam(examId) {
+    const query = `
+      SELECT a.*, 
+             s.student_code, s.first_name, s.last_name,
+             u.first_name as supervisor_first_name, u.last_name as supervisor_last_name
+      FROM attendance a
+      JOIN students s ON a.student_id = s.id
+      LEFT JOIN users u ON a.supervisor_id = u.id
+      WHERE a.exam_id = $1
+      ORDER BY s.last_name, s.first_name
+    `;
+    
+    const result = await db.query(query, [examId]);
+    return result.rows;
+  }
+
+  // Statistiques de présence
+  static async getStats(examId) {
+    const query = `
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
+        COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
+        COUNT(CASE WHEN status = 'late' THEN 1 END) as late,
+        COUNT(CASE WHEN status = 'excused' THEN 1 END) as excused,
+        ROUND(
+          COUNT(CASE WHEN status = 'present' THEN 1 END)::FLOAT / 
+          NULLIF(COUNT(*), 0) * 100, 2
+        ) as attendance_rate
+      FROM attendance 
+      WHERE exam_id = $1
+    `;
+    
+    const result = await db.query(query, [examId]);
+    return result.rows[0];
+  }
+}
+
+module.exports = Attendance;
