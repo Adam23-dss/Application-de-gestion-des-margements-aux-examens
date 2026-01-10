@@ -48,11 +48,16 @@ const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const examRoutes = require('./routes/examRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const roomRoutes = require('./routes/roomRoutes');
 
+  
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/rooms', roomRoutes);
 
 // ============================================
 // ROUTE DE SANTÉ DE LA BASE DE DONNÉES
@@ -99,7 +104,16 @@ app.use((req, res) => {
       'GET  /api/exams/:id (protected)',
       'POST /api/exams/:id/start (protected)',
       'POST /api/exams/:id/end (protected)',
-      'GET  /api/exams/:id/students (protected)'
+      'GET  /api/exams/:id/students (protected)',
+      'POST /api/attendance/validate (protected)',
+      'GET  /api/courses (protected)',
+      'GET  /api/courses/:id (protected)',
+      'GET  /api/courses/code/:code (protected)',
+      'POST /api/courses (protected)',
+      'GET  /api/rooms (protected)',
+      'GET  /api/rooms/:id (protected)',
+      'GET  /api/rooms/code/:code (protected)',
+      'POST /api/rooms (protected)',
     ]
   });
 });
