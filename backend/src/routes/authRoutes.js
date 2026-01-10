@@ -62,7 +62,6 @@ router.get(
     });
   }
 );
-
 // Route pour tester les rôles admin
 router.get(
   '/test-admin',

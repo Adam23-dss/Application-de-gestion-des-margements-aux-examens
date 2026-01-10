@@ -73,6 +73,15 @@ async function startServer() {
       console.log('   POST /api/auth/logout      - Déconnexion');
       console.log('   GET  /api/auth/test-auth   - Test auth (protégé)');
       console.log('='.repeat(50));
+      console.log('📋 Routes STUDENTS disponibles:');
+      console.log('   GET  /api/students         - Liste des étudiants (protégé)');
+      console.log('   GET  /api/students/:id     - Détails d\'un étudiant (protégé)');
+      console.log('='.repeat(50));
+      console.log('Routes EXAMS disponibles via WebSocket:');
+      console.log('   POST /api/exams/:id/start  - Démarrer un examen (protégé)');
+      console.log('   POST /api/exams/:id/end    - Terminer un examen (protégé)');
+      console.log('   GET  /api/exams/:id/students - Obtenir les étudiants d\'un examen (protégé)');
+      console.log('='.repeat(50));
       console.log('👤 Comptes de test:');
       console.log('   Email: admin@univ.fr / Mot de passe: password123');
       console.log('   Email: surveillant@univ.fr / Mot de passe: password123');

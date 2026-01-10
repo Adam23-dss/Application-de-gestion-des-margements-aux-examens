@@ -45,6 +45,11 @@ app.get('/api/test', (req, res) => {
 // IMPORT ET UTILISATION DES ROUTES
 // ============================================
 const authRoutes = require('./routes/authRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+const examRoutes = require('./routes/examRoutes');
+
+app.use('/api/exams', examRoutes);
+app.use('/api/students', studentRoutes);
 app.use('/api/auth', authRoutes);
 
 // ============================================
@@ -85,7 +90,14 @@ app.use((req, res) => {
       'POST /api/auth/register',
       'POST /api/auth/refresh',
       'GET  /api/auth/profile (protected)',
-      'GET  /api/auth/test-auth (protected)'
+      'GET  /api/auth/test-auth (protected)',
+      'GET  /api/students (protected)',
+      'GET  /api/students/:id (protected)',
+      'GET  /api/exams (protected)',
+      'GET  /api/exams/:id (protected)',
+      'POST /api/exams/:id/start (protected)',
+      'POST /api/exams/:id/end (protected)',
+      'GET  /api/exams/:id/students (protected)'
     ]
   });
 });
