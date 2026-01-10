@@ -66,6 +66,17 @@ app.use('/api/stats', statsRoutes);
 // ============================================
 // ROUTE DE SANTÉ DE LA BASE DE DONNÉES
 // ============================================
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Attendance Management API',
+    version: process.env.APP_VERSION || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    database: 'Connected' // Tu peux vérifier la connexion DB ici
+  });
+});
 app.get('/api/health/db', async (req, res) => {
   try {
     const { testConnection } = require('./config/database');

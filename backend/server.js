@@ -10,9 +10,6 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    console.log('='.repeat(60));
-    console.log('🚀 DÉMARRAGE SERVEUR ATTENDANCE MANAGEMENT - JOUR 4');
-    console.log('='.repeat(60));
     
     // 1. Tester la connexion DB
     console.log('🔧 Test de connexion à la base de données...');
@@ -161,7 +158,7 @@ async function startServer() {
       console.log('   join-exam           - Rejoindre une salle');
       console.log('   leave-exam          - Quitter une salle');
       console.log('='.repeat(60));
-      
+
       console.log('📚 GESTION COURS:');
 
       console.log('='.repeat(60));
