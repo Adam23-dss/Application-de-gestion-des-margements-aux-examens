@@ -50,6 +50,8 @@ const examRoutes = require('./routes/examRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const roomRoutes = require('./routes/roomRoutes');
+const exportRoutes = require('./routes/exportRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
   
 app.use('/api/attendance', attendanceRoutes);
@@ -58,6 +60,8 @@ app.use('/api/students', studentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/exports', exportRoutes);
+app.use('/api/stats', statsRoutes);
 
 // ============================================
 // ROUTE DE SANTÉ DE LA BASE DE DONNÉES
@@ -114,6 +118,10 @@ app.use((req, res) => {
       'GET  /api/rooms/:id (protected)',
       'GET  /api/rooms/code/:code (protected)',
       'POST /api/rooms (protected)',
+      'GET  /api/exports/attendance/:id/pdf (protected)',
+      'GET  /api/exports/attendance/:id/excel (protected)',
+      'GET  /api/stats/dashboard (protected)',
+      'GET  /api/stats/daily/:date (protected)'
     ]
   });
 });

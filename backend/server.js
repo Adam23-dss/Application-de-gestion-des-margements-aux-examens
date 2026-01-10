@@ -162,6 +162,10 @@ async function startServer() {
       console.log('   leave-exam          - Quitter une salle');
       console.log('='.repeat(60));
       
+      console.log('📚 GESTION COURS:');
+
+      console.log('='.repeat(60));
+      
       console.log('📊 ENDPOINTS UTILITAIRES:');
       console.log('   GET    /health                     - Santé de l\'API');
       console.log('   GET    /api/seed                   - Remplissage DB (dev)');
@@ -175,7 +179,6 @@ async function startServer() {
       console.log('        Email: surveillant@univ.fr');
       console.log('        Mot de passe: password123');
       console.log('='.repeat(60));
-      
       console.log('💡 CONSEILS:');
       console.log('   1. Toujours inclure: Authorization: Bearer {token}');
       console.log('   2. Pour WebSocket: socket.emit(\'join-exam\', examId)');
