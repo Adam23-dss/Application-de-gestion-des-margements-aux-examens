@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend1/core/themes/app_colors.dart';
-import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-// import 'package:attendance_frontend/presentation/providers/auth_provider.dart';
-// import 'package:attendance_frontend/core/themes/app_colors.dart';
+import 'package:frontend1/presentation/providers/auth_provider.dart';
+import 'package:frontend1/core/themes/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,32 +17,39 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  @override
+  void initState() {
+    super.initState();
+    // Pré-remplir avec compte test pour le développement
+    _emailController.text = 'surveillant@univ.fr';
+    _passwordController.text = 'password123';
+  }
+
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    try {
+      await authProvider.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
       
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      // Naviguer vers le dashboard
+      Navigator.pushReplacementNamed(context, '/dashboard');
       
-      try {
-        await authProvider.login(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-        
-        // Navigation vers le dashboard après connexion réussie
-        // ignore: use_build_context_synchronously
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } catch (e) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de connexion: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      } finally {
-        setState(() => _isLoading = false);
-      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -54,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Column(
             children: [
               const SizedBox(height: 60),
@@ -86,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Gestion des émargements universitaires',
+                    'Gestion des émargements',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.textSecondary,
@@ -97,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
               
               const SizedBox(height: 48),
               
-              // Formulaire de connexion
+              // Formulaire
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -105,7 +110,6 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
@@ -161,9 +165,6 @@ class _LoginPageState extends State<LoginPage> {
                           if (value == null || value.isEmpty) {
                             return 'Veuillez entrer votre mot de passe';
                           }
-                          if (value.length < 6) {
-                            return 'Le mot de passe doit avoir au moins 6 caractères';
-                          }
                           return null;
                         },
                       ),
@@ -175,12 +176,6 @@ class _LoginPageState extends State<LoginPage> {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                           child: _isLoading
                               ? const SizedBox(
                                   width: 24,
@@ -192,40 +187,34 @@ class _LoginPageState extends State<LoginPage> {
                                 )
                               : const Text(
                                   'Se connecter',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: TextStyle(fontSize: 16),
                                 ),
                         ),
                       ),
                       
                       const SizedBox(height: 16),
                       
-                      // Lien pour test (à supprimer en production)
-                      TextButton(
-                        onPressed: () {
-                          _emailController.text = 'surveillant@univ.fr';
-                          _passwordController.text = 'password123';
-                        },
-                        child: Text(
-                          'Remplir avec compte test',
-                          style: TextStyle(color: AppColors.primary),
-                        ),
+                      // Comptes de test
+                      Column(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              _emailController.text = 'surveillant@univ.fr';
+                              _passwordController.text = 'password123';
+                            },
+                            child: const Text('Compte surveillant'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              _emailController.text = 'admin@univ.fr';
+                              _passwordController.text = 'password123';
+                            },
+                            child: const Text('Compte admin'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Version
-              Text(
-                'Version 1.0.0',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
                 ),
               ),
             ],
@@ -233,12 +222,5 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
-  }
-  
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }

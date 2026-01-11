@@ -41,6 +41,12 @@ dependencies:
   dio: ^5.9.0
   web_socket_channel: ^3.0.3
 
+  # Secure Storage
+  flutter_secure_storage: ^10.0.0
+
+  # JSON UTILS
+  equatable: ^2.0.8
+
   # Navigation
   go_router: ^17.0.1
 
@@ -54,9 +60,14 @@ dependencies:
   intl: ^0.20.2
   pdf: ^3.11.3
   excel: ^4.0.6
+  crypto: ^3.0.7
 
   # QR Code (Simulation pour MVP)
   qr_code_scanner: ^1.0.1
+  mobile_scanner: ^7.1.4
+
+  # Loading / Feedback
+  fluttertoast: ^9.0.0
 
 dev_dependencies:
   flutter_test:

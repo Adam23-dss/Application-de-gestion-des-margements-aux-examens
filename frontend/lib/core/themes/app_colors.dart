@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/animation.dart';
 
 class AppColors {
   // Couleurs primaires
@@ -11,6 +11,7 @@ class AppColors {
   static const Color error = Color(0xFFEF4444);
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);
+  static const Color excused = Color(0xFF8B5CF6);
   
   // Couleurs neutres
   static const Color background = Color(0xFFF8FAFC);
@@ -20,10 +21,5 @@ class AppColors {
   // Texte
   static const Color textPrimary = Color(0xFF1E293B);
   static const Color textSecondary = Color(0xFF64748B);
-  
-  // États de présence
-  static const Color present = Color(0xFF10B981);
-  static const Color absent = Color(0xFFEF4444);
-  static const Color late = Color(0xFFF59E0B);
-  static const Color excused = Color(0xFF8B5CF6);
+  static const Color textTertiary = Color(0xFF94A3B8);
 }
