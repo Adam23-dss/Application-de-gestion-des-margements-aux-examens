@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:frontend1/core/themes/app_colors.dart';
-import 'package:frontend1/presentation/providers/auth_provider.dart';
+import 'package:frontend/core/themes/app_colors.dart';
+import 'package:frontend/presentation/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 // import 'package:attendance_frontend/presentation/providers/auth_provider.dart';
 // import 'package:attendance_frontend/core/themes/app_colors.dart';

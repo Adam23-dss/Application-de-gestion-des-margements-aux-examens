@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:frontend1/core/constants/api_endpoints.dart';
+import 'package:frontend/core/constants/api_endpoints.dart';
 // ignore: depend_on_referenced_packages
 // import 'package:attendance_frontend/core/constants/api_endpoints.dart';
 // import 'package:attendance_frontend/data/api/auth_interceptor.dart';

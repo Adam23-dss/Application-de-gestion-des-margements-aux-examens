@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:frontend1/presentation/pages/auth/login_page.dart';
-import 'package:frontend1/presentation/providers/auth_provider.dart';
+import 'package:frontend/presentation/pages/auth/login_page.dart';
+import 'package:frontend/presentation/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:frontend1/core/themes/app_theme.dart'; // ✅ IMPORTANT
+import 'package:frontend/core/themes/app_theme.dart'; // ✅ IMPORTANT
 
 void main() {
   runApp(const MyApp());
