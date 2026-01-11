@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:frontend1/data/models/user_model.dart';
+import 'package:frontend/data/models/user_model.dart';
 // import 'package:attendance_frontend/data/repositories/auth_repository.dart';
 // import 'package:attendance_frontend/data/models/user_model.dart';
 

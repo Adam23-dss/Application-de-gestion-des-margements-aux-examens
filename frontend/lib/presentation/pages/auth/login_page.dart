@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+=======
+import 'package:frontend/core/themes/app_colors.dart';
+import 'package:frontend/presentation/providers/auth_provider.dart';
+>>>>>>> 26af70491dde05fe4bbce1d155db830ea5c2d08b
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/core/themes/app_colors.dart';

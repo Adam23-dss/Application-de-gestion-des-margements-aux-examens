@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/providers/exam_provider.dart';
@@ -7,6 +8,12 @@ import 'package:frontend1/core/themes/app_theme.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
 import 'package:frontend1/presentation/pages/dashboard/dashboard_page.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
+=======
+import 'package:frontend/presentation/pages/auth/login_page.dart';
+import 'package:frontend/presentation/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/core/themes/app_theme.dart'; // ✅ IMPORTANT
+>>>>>>> 26af70491dde05fe4bbce1d155db830ea5c2d08b
 
 void main() {
   runApp(const MyApp());
