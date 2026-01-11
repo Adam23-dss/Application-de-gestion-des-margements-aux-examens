@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend1/core/themes/app_colors.dart';
+import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:attendance_frontend/presentation/providers/auth_provider.dart';
-import 'package:attendance_frontend/core/themes/app_colors.dart';
+// import 'package:attendance_frontend/presentation/providers/auth_provider.dart';
+// import 'package:attendance_frontend/core/themes/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -30,8 +32,10 @@ class _LoginPageState extends State<LoginPage> {
         );
         
         // Navigation vers le dashboard après connexion réussie
+        // ignore: use_build_context_synchronously
         Navigator.pushReplacementNamed(context, '/dashboard');
       } catch (e) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur de connexion: ${e.toString()}'),
@@ -101,6 +105,7 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
+                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 4),

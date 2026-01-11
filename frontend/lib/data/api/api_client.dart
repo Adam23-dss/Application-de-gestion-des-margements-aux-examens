@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:frontend1/core/constants/api_endpoints.dart';
 // ignore: depend_on_referenced_packages
-import 'package:attendance_frontend/core/constants/api_endpoints.dart';
-import 'package:attendance_frontend/data/api/auth_interceptor.dart';
+// import 'package:attendance_frontend/core/constants/api_endpoints.dart';
+// import 'package:attendance_frontend/data/api/auth_interceptor.dart';
 
 class ApiClient {
   static final Dio _dio = Dio(
@@ -13,7 +14,7 @@ class ApiClient {
         'Content-Type': 'application/json',
       },
     ),
-  )..interceptors.add(AuthInterceptor());
+  )..interceptors.add(AuthInterceptor() as Interceptor);
 
   // Méthode pour obtenir l'instance Dio
   static Dio get instance => _dio;
@@ -35,4 +36,7 @@ class ApiClient {
   static Future<Response> delete(String endpoint) async {
     return await _dio.delete(endpoint);
   }
+}
+
+class AuthInterceptor {
 }

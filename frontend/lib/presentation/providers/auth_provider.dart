@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:frontend1/data/models/user_model.dart';
 // import 'package:attendance_frontend/data/repositories/auth_repository.dart';
 // import 'package:attendance_frontend/data/models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
-  final AuthRepository _authRepository = AuthRepository();
+  late final _authRepository = AuthRepository();
   
   User? _user;
   bool _isLoading = false;
@@ -54,4 +55,14 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+}
+
+class AuthRepository {
+  Future<User?> login(String email, String password) async {
+    return null;
+  }
+  
+  Future<void> logout() async {}
+  
+  Future<dynamic> getProfile() async {}
 }
