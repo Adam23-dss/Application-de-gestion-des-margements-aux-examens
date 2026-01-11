@@ -1,31 +1,35 @@
 import 'package:flutter/foundation.dart';
-import 'package:frontend/data/models/user_model.dart';
-// import 'package:attendance_frontend/data/repositories/auth_repository.dart';
-// import 'package:attendance_frontend/data/models/user_model.dart';
+import 'package:frontend1/data/models/user_model.dart';
+import 'package:frontend1/domain/usecases/login_usecase.dart';
+import 'package:frontend1/data/repositories/auth_repository.dart';
 
 class AuthProvider with ChangeNotifier {
-  late final _authRepository = AuthRepository();
-  
-  User? _user;
+  UserModel? _user;
   bool _isLoading = false;
   String? _error;
   
-  User? get user => _user;
+  UserModel? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAuthenticated => _user != null;
-  bool get isAdmin => _user?.role == 'admin';
-  bool get isSupervisor => _user?.role == 'supervisor';
   
-  Future<void> login({required String email, required String password}) async {
+  final LoginUseCase _loginUseCase;
+  
+  AuthProvider() : _loginUseCase = LoginUseCase(AuthRepository());
+  
+  Future<void> login(String email, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     
     try {
-      _user = await _authRepository.login(email, password);
+      _user = await _loginUseCase.execute(
+        email: email,
+        password: password,
+      );
+      _error = null;
     } catch (e) {
       _error = e.toString();
+      _user = null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -33,36 +37,29 @@ class AuthProvider with ChangeNotifier {
   }
   
   Future<void> logout() async {
-    await _authRepository.logout();
+    final repository = AuthRepository();
+    await repository.logout();
     _user = null;
-    _error = null;
     notifyListeners();
   }
   
-  Future<void> checkAuth() async {
+  Future<void> loadStoredUser() async {
     _isLoading = true;
     notifyListeners();
     
     try {
-      final user = await _authRepository.getProfile();
-      if (user != null) {
-        _user = user;
-      }
+      final repository = AuthRepository();
+      _user = await repository.getStoredUser();
     } catch (e) {
-      // Ne pas afficher d'erreur, juste ne pas authentifier
+      _user = null;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
-}
-
-class AuthRepository {
-  Future<User?> login(String email, String password) async {
-    return null;
+  
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
-  
-  Future<void> logout() async {}
-  
-  Future<dynamic> getProfile() async {}
 }

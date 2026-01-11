@@ -1,38 +1,42 @@
-class User {
+import 'package:frontend1/core/constants/user_roles.dart';
+
+class UserModel {
   final String id;
-  final String email;
   final String name;
+  final String email;
   final String role;
-  final String? token;
-
-  User({
+  final String token;
+  
+  UserModel({
     required this.id,
-    required this.email,
     required this.name,
+    required this.email,
     required this.role,
-    this.token,
+    required this.token,
   });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['_id'] ?? json['id'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? '',
-      role: json['role'] ?? '',
-      token: json['token'],
+  
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['user']['_id'] ?? json['user']['id'] ?? '',
+      name: json['user']['name'] ?? '',
+      email: json['user']['email'] ?? '',
+      role: json['user']['role'] ?? '',
+      token: json['token'] ?? '',
     );
   }
-
+  
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'email': email,
-      'name': name,
-      'role': role,
+      'user': {
+        'id': id,
+        'name': name,
+        'email': email,
+        'role': role,
+      },
       'token': token,
     };
   }
-
-  bool get isAdmin => role == 'admin';
-  bool get isSupervisor => role == 'supervisor';
+  
+  bool get isAdmin => role == UserRole.admin;
+  bool get isSurveillant => role == UserRole.surveillant;
 }

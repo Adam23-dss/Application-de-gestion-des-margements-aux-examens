@@ -1,42 +1,31 @@
 import 'package:dio/dio.dart';
-import 'package:frontend/core/constants/api_endpoints.dart';
-// ignore: depend_on_referenced_packages
-// import 'package:attendance_frontend/core/constants/api_endpoints.dart';
-// import 'package:attendance_frontend/data/api/auth_interceptor.dart';
+import 'package:frontend1/core/constants/api_endpoints.dart';
+import 'auth_interceptor.dart';
 
 class ApiClient {
-  static final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: ApiEndpoints.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    ),
-  )..interceptors.add(AuthInterceptor() as Interceptor);
-
-  // Méthode pour obtenir l'instance Dio
-  static Dio get instance => _dio;
-
-  // Méthodes HTTP génériques
-  static Future<Response> get(String endpoint,
-      {Map<String, dynamic>? queryParameters}) async {
-    return await _dio.get(endpoint, queryParameters: queryParameters);
+  static final ApiClient _instance = ApiClient._internal();
+  
+  factory ApiClient() {
+    return _instance;
   }
-
-  static Future<Response> post(String endpoint, dynamic data) async {
-    return await _dio.post(endpoint, data: data);
+  
+  ApiClient._internal() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ApiEndpoints.baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        contentType: 'application/json',
+      ),
+    );
+    
+    // Add interceptor for auth
+    _dio.interceptors.add(AuthInterceptor());
   }
-
-  static Future<Response> put(String endpoint, dynamic data) async {
-    return await _dio.put(endpoint, data: data);
-  }
-
-  static Future<Response> delete(String endpoint) async {
-    return await _dio.delete(endpoint);
-  }
-}
-
-class AuthInterceptor {
+  
+  late final Dio _dio;
+  
+  Dio get dio => _dio;
+  
+  static Dio get instance => _instance.dio;
 }
