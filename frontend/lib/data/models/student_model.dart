@@ -1,49 +1,57 @@
-class Student {
-  final String id;
-  final String code;
+class StudentModel {
+  final int id;
+  final String studentCode;
   final String firstName;
   final String lastName;
-  final String email;
-  final String program;
-  final int year;
-  final String? phone;
-
-  Student({
+  final String? email;
+  final String ufr;
+  final String department;
+  final String? promotion;
+  final bool isActive;
+  
+  StudentModel({
     required this.id,
-    required this.code,
+    required this.studentCode,
     required this.firstName,
     required this.lastName,
-    required this.email,
-    required this.program,
-    required this.year,
-    this.phone,
+    this.email,
+    required this.ufr,
+    required this.department,
+    this.promotion,
+    required this.isActive,
   });
-
-  factory Student.fromJson(Map<String, dynamic> json) {
-    return Student(
-      id: json['_id'] ?? json['id'] ?? '',
-      code: json['code'] ?? '',
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      email: json['email'] ?? '',
-      program: json['program'] ?? '',
-      year: json['year'] ?? 0,
-      phone: json['phone'],
+  
+  factory StudentModel.fromJson(Map<String, dynamic> json) {
+    return StudentModel(
+      id: json['id'] ?? 0,
+      studentCode: json['student_code']?.toString() ?? '',
+      firstName: json['first_name']?.toString() ?? '',
+      lastName: json['last_name']?.toString() ?? '',
+      email: json['email']?.toString(),
+      ufr: json['ufr']?.toString() ?? '',
+      department: json['department']?.toString() ?? '',
+      promotion: json['promotion']?.toString(),
+      isActive: json['is_active'] ?? true,
     );
   }
-
+  
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'code': code,
-      'firstName': firstName,
-      'lastName': lastName,
+      'student_code': studentCode,
+      'first_name': firstName,
+      'last_name': lastName,
       'email': email,
-      'program': program,
-      'year': year,
-      'phone': phone,
+      'ufr': ufr,
+      'department': department,
+      'promotion': promotion,
+      'is_active': isActive,
     };
   }
-
+  
   String get fullName => '$firstName $lastName';
+  
+  String get formattedInfo {
+    return '$studentCode - $fullName ($department)';
+  }
 }

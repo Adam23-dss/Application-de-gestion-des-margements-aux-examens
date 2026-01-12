@@ -1,25 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:frontend1/data/models/user_model.dart';
-import 'package:frontend1/domain/usecases/login_usecase.dart';
 import 'package:frontend1/data/repositories/auth_repository.dart';
 
 class AuthProvider with ChangeNotifier {
   UserModel? _user;
-  bool _isLoading = true; // Commencer avec true
+  bool _isLoading = true;
   String? _error;
   
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   
-  final LoginUseCase _loginUseCase;
+  final AuthRepository _repository = AuthRepository();
   
-  AuthProvider() : _loginUseCase = LoginUseCase(AuthRepository()) {
-    // Ne pas appeler loadStoredUser ici
-  }
-  
-  // Méthode d'initialisation séparée
   Future<void> initialize() async {
+    print('🔄 Initializing auth provider...');
     await loadStoredUser();
   }
   
@@ -28,16 +23,19 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
     
+    print('🔐 Attempting login with email: $email');
+    
     try {
-      _user = await _loginUseCase.execute(
+      _user = await _repository.login(
         email: email,
         password: password,
       );
       _error = null;
+      print('✅ Login successful: ${_user!.fullName}');
     } catch (e) {
       _error = e.toString();
       _user = null;
-      print('Login error in provider: $_error');
+      print('❌ Login error: $_error');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -45,18 +43,25 @@ class AuthProvider with ChangeNotifier {
   }
   
   Future<void> logout() async {
-    final repository = AuthRepository();
-    await repository.logout();
-    _user = null;
-    notifyListeners();
+    try {
+      await _repository.logout();
+    } catch (e) {
+      print('Logout error: $e');
+    } finally {
+      _user = null;
+      notifyListeners();
+    }
   }
   
   Future<void> loadStoredUser() async {
     _isLoading = true;
+    notifyListeners();
     
     try {
-      final repository = AuthRepository();
-      _user = await repository.getStoredUser();
+      _user = await _repository.getStoredUser();
+      print(_user != null 
+          ? '✅ Loaded stored user: ${_user!.fullName}' 
+          : '❌ No stored user found');
     } catch (e) {
       print('Error loading stored user: $e');
       _user = null;
