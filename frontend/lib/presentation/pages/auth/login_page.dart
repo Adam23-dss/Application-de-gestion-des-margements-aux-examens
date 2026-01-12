@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/pages/dashboard/dashboard_page.dart';
 import 'package:frontend1/core/themes/app_colors.dart';
-import 'package:frontend1/core/themes/app_theme.dart';
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -250,9 +248,9 @@ class _LoginPageState extends State<LoginPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: AppColors.primary),
         ),
         child: Text(
           text,

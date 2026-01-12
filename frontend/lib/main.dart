@@ -17,7 +17,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider()..initialize(),
+          lazy: false, // Instancier immédiatement
+        ),
       ],
       child: MaterialApp(
         title: 'Attendance System',
@@ -29,43 +32,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isLoading = true;
-  bool _isLoggedIn = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkAuthStatus();
-  }
-
-  Future<void> _checkAuthStatus() async {
-    final authProvider = context.read<AuthProvider>();
-    await authProvider.loadStoredUser();
-    
-    setState(() {
-      _isLoggedIn = authProvider.user != null;
-      _isLoading = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final authProvider = context.watch<AuthProvider>();
+    
+    if (authProvider.isLoading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
       );
     }
-
-    return _isLoggedIn ? const DashboardPage() : const LoginPage();
+    
+    return authProvider.user != null ? const DashboardPage() : const LoginPage();
   }
 }

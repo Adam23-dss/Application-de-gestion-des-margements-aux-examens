@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/pages/admin/admin_dashboard.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
-import 'package:frontend1/core/constants/user_roles.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -46,7 +45,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Welcome ${user.name}!'),
+            Text('Welcome ${user.fullName}!'),
             Text('Role: ${user.role}'),
             const SizedBox(height: 20),
             ElevatedButton(

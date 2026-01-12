@@ -5,7 +5,7 @@ import 'package:frontend1/data/repositories/auth_repository.dart';
 
 class AuthProvider with ChangeNotifier {
   UserModel? _user;
-  bool _isLoading = false;
+  bool _isLoading = true; // Commencer avec true
   String? _error;
   
   UserModel? get user => _user;
@@ -14,7 +14,14 @@ class AuthProvider with ChangeNotifier {
   
   final LoginUseCase _loginUseCase;
   
-  AuthProvider() : _loginUseCase = LoginUseCase(AuthRepository());
+  AuthProvider() : _loginUseCase = LoginUseCase(AuthRepository()) {
+    // Ne pas appeler loadStoredUser ici
+  }
+  
+  // Méthode d'initialisation séparée
+  Future<void> initialize() async {
+    await loadStoredUser();
+  }
   
   Future<void> login(String email, String password) async {
     _isLoading = true;
@@ -30,6 +37,7 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       _user = null;
+      print('Login error in provider: $_error');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -45,12 +53,12 @@ class AuthProvider with ChangeNotifier {
   
   Future<void> loadStoredUser() async {
     _isLoading = true;
-    notifyListeners();
     
     try {
       final repository = AuthRepository();
       _user = await repository.getStoredUser();
     } catch (e) {
+      print('Error loading stored user: $e');
       _user = null;
     } finally {
       _isLoading = false;

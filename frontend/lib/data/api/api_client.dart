@@ -3,10 +3,11 @@ import 'package:frontend1/core/constants/api_endpoints.dart';
 import 'auth_interceptor.dart';
 
 class ApiClient {
-  static final ApiClient _instance = ApiClient._internal();
+  // Singleton instance
+  static final ApiClient _singleton = ApiClient._internal();
   
   factory ApiClient() {
-    return _instance;
+    return _singleton;
   }
   
   ApiClient._internal() {
@@ -25,7 +26,9 @@ class ApiClient {
   
   late final Dio _dio;
   
+  // Getter for Dio instance
   Dio get dio => _dio;
   
-  static Dio get instance => _instance.dio;
+  // Static getter for convenience
+  static Dio get instance => _singleton.dio;
 }

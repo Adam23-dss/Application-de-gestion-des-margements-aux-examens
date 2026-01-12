@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
-import 'package:frontend1/presentation/pages/admin/admin_dashboard.dart';
-import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
-import 'package:frontend1/core/constants/user_roles.dart';
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
 
@@ -36,7 +33,7 @@ class _ScanPageState extends State<ScanPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Welcome Surveillant ${user.name}!'),
+            Text('Welcome Surveillant ${user.fullName}!'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => authProvider.logout(),

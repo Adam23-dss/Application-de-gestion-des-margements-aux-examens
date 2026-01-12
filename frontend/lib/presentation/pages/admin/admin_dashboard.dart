@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
-import 'package:frontend1/presentation/pages/admin/admin_dashboard.dart';
-import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
-import 'package:frontend1/core/constants/user_roles.dart';
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -36,7 +33,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Welcome Admin ${user.name}!'),
+            Text('Welcome Admin ${user.fullName}!'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => authProvider.logout(),

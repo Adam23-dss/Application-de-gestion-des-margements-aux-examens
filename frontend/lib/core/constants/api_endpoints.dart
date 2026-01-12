@@ -1,11 +1,12 @@
 class ApiEndpoints {
-  static const String baseUrl = 'https://application-de-gestion-des-margements.onrender.com';
+   static const String baseUrl = 'https://application-de-gestion-des-margements.onrender.com';
   
   // Auth endpoints
   static const String login = '$baseUrl/api/auth/login';
   static const String register = '$baseUrl/api/auth/register';
   static const String logout = '$baseUrl/api/auth/logout';
   static const String verifyToken = '$baseUrl/api/auth/verify-token';
+  static const String profile = '$baseUrl/api/auth/profile';
   
   // Exam endpoints
   static const String exams = '$baseUrl/api/exams';

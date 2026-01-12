@@ -8,7 +8,6 @@ class AppTheme {
       colorScheme: ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.primaryLight,
-        background: AppColors.background,
         surface: AppColors.card,
         error: AppColors.error,
       ),
