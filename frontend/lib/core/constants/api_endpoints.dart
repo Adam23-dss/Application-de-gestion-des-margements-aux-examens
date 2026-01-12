@@ -1,32 +1,69 @@
 class ApiEndpoints {
-   static const String baseUrl = 'https://application-de-gestion-des-margements.onrender.com';
+  // Base URL
+  static const String baseUrl = 'https://application-de-gestion-des-margements.onrender.com/api';
   
-  // Auth endpoints
-  static const String login = '$baseUrl/api/auth/login';
-  static const String logout = '$baseUrl/api/auth/logout';
-  static const String profile = '$baseUrl/api/auth/profile';
-  static const String testAuth = '$baseUrl/api/auth/test-auth';
+  // Auth
+  static const String login = '$baseUrl/auth/login';
+  static const String logout = '$baseUrl/auth/logout';
+  static const String profile = '$baseUrl/auth/profile';
+  static const String testAuth = '$baseUrl/auth/test-auth';
   
-  // Exam endpoints
-  static const String exams = '$baseUrl/api/exams';
+  // Exams
+  static const String exams = '$baseUrl/exams';
   static String examDetails(int id) => '$exams/$id';
   static String examStudents(int id) => '$exams/$id/students';
   static String startExam(int id) => '$exams/$id/start';
   static String endExam(int id) => '$exams/$id/end';
   
-  // Student endpoints
-  static const String students = '$baseUrl/api/students';
-  static String studentSearch = '$students/search';
-  
-  // Attendance endpoints
-  static const String attendance = '$baseUrl/api/attendance';
+  // Attendance
+  static const String attendance = '$baseUrl/attendance';
   static const String validateAttendance = '$attendance/validate';
-  static String examAttendance(int examId) => '$attendance/exam/$examId';
-  static String attendanceStats(int examId) => '$attendance/stats/$examId';
+  static String examAttendance(int id) => '$attendance/exam/$id';
+  static String attendanceStats(int id) => '$attendance/stats/$id';
   
-  // Dashboard endpoints
-  static const String dashboardStats = '$baseUrl/api/stats/dashboard';
+  // Students
+  static const String students = '$baseUrl/students';
+  static const String searchStudents = '$students/search';
   
-  // Socket.io events
-  static const String socketUrl = baseUrl;
+  // Courses
+  static const String courses = '$baseUrl/courses';
+  static String courseDetails(int id) => '$courses/$id';
+  static const String searchCourses = '$courses/search';
+  
+  // Rooms
+  static const String rooms = '$baseUrl/rooms';
+  static const String availableRooms = '$rooms/available';
+  
+  // Stats
+  static const String stats = '$baseUrl/stats';
+  static const String dashboardStats = '$stats/dashboard';
+  static const String dailyStats = '$stats/daily';
+  
+  // Exports
+  static const String exports = '$baseUrl/exports';
+  static String exportAttendancePDF(int id) => '$exports/attendance/$id/pdf';
+  static String exportAttendanceExcel(int id) => '$exports/attendance/$id/excel';
+}
+
+class PaginationData {
+  final int currentPage;
+  final int totalPages;
+  final int totalItems;
+  final int itemsPerPage;
+  
+  PaginationData({
+    required this.currentPage,
+    required this.totalPages,
+    required this.totalItems,
+    required this.itemsPerPage,
+  });
+  
+  factory PaginationData.fromJson(Map<String, dynamic> json) {
+    return PaginationData(
+      currentPage: json['currentPage'] ?? 1,
+      totalPages: json['totalPages'] ?? 1,
+      totalItems: json['totalItems'] ?? 0,
+      itemsPerPage: json['itemsPerPage'] ?? 20,
+    );
+  }
 }

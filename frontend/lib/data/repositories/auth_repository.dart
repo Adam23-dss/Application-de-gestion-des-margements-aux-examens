@@ -1,13 +1,16 @@
-import 'package:dio/dio.dart';
 import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:frontend1/core/constants/api_endpoints.dart';
-import 'package:frontend1/data/api/api_client.dart';
-import 'package:frontend1/data/models/user_model.dart';
 import 'package:frontend1/core/utils/secure_storage.dart';
-import 'package:frontend1/test_backend.dart';
+import 'package:frontend1/data/api/api_client.dart';
+import 'package:frontend1/data/api/auth_interceptor.dart';
+import 'package:frontend1/data/models/user_model.dart';
 
 class AuthRepository {
   final Dio _dio = ApiClient.instance;
+  final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   Future<UserModel> login({
     required String email,
@@ -17,126 +20,134 @@ class AuthRepository {
       print('🚀 AuthRepository.login called');
       print('📧 Email: $email');
 
+      // Réinitialise l'intercepteur pour éviter le token expiré
+      _dio.interceptors.clear();
+      _dio.interceptors.add(AuthInterceptor());
+
       final response = await _dio.post(
         ApiEndpoints.login,
-        data: {'email': email, 'password': password},
+        data: {
+          'email': email,
+          'password': password,
+        },
       );
 
       print('📡 Response status: ${response.statusCode}');
-
+      
       if (response.statusCode == 200) {
-        print('✅ Login API call successful');
-
         final responseData = response.data;
-        print('📊 Response keys: ${responseData.keys.toList()}');
-
+        
         if (responseData['success'] == true) {
-          final user = UserModel.fromJson(responseData);
-
+          print('✅ Login API call successful');
+          
+          // Créer l'utilisateur avec les tokens
+          UserModel user;
+          
+          if (responseData['data'] is Map<String, dynamic>) {
+            final data = responseData['data'] as Map<String, dynamic>;
+            
+            if (data.containsKey('user')) {
+              // Format 1: user et tokens séparés
+              final userJson = data['user'] as Map<String, dynamic>;
+              final tokensJson = data['tokens'] as Map<String, dynamic>;
+              
+              // Fusionner user et tokens
+              final mergedJson = {
+                ...userJson,
+                ...tokensJson,
+              };
+              
+              user = UserModel.fromJson(mergedJson);
+            } else {
+              // Format 2: tout dans data
+              user = UserModel.fromJson(data);
+            }
+          } else {
+            // Format 3: réponse directe
+            user = UserModel.fromJson(responseData);
+          }
+          
           print('👤 User created successfully: ${user.fullName}');
-          print('🔑 Access token extracted: ${user.accessToken.isNotEmpty}');
-          print(
-            '🔑 Token (first 30): ${user.accessToken.substring(0, min(30, user.accessToken.length))}...',
+          
+          // Sauvegarder le token d'accès séparément
+          if (user.accessToken != null) {
+            print('💾 Saving access token to secure storage');
+            await _storage.write(
+              key: 'access_token', 
+              value: user.accessToken!
+            );
+          }
+          
+          // Sauvegarder le token de rafraîchissement s'il existe
+          if (user.refreshToken != null) {
+            await _storage.write(
+              key: 'refresh_token', 
+              value: user.refreshToken!
+            );
+          }
+          
+          // Sauvegarder les données utilisateur (sans tokens)
+          await _storage.write(
+            key: 'user',
+            value: jsonEncode(user.toStorageJson()),
           );
-
-          // Save token and user data
-          await SecureStorage.saveToken(user.accessToken);
-          await SecureStorage.saveUserData(user.toJson().toString());
-
+          
           print('💾 Credentials saved to secure storage');
-
+          
           return user;
         } else {
           throw Exception(responseData['message'] ?? 'Login failed');
         }
       } else {
-        throw Exception('Login failed: ${response.statusCode}');
+        throw Exception('API error: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('❌ DioException: ${e.message}');
+      print('❌ Dio error: ${e.message}');
       if (e.response != null) {
-        print('Response data: ${e.response!.data}');
+        print('📡 Response status: ${e.response!.statusCode}');
+        print('📊 Response data: ${e.response!.data}');
       }
-      rethrow;
+      throw Exception('Network error: ${e.message}');
     }
   }
-
-  Future<void> logout() async {
-    try {
-      await _dio.post(ApiEndpoints.logout);
-    } catch (e) {
-      print('Warning: Logout API call failed: $e');
-    } finally {
-      await SecureStorage.clearAll();
-    }
-  }
-
+  
   Future<UserModel?> getStoredUser() async {
     try {
-      final token = await SecureStorage.getToken();
-
-      if (token == null || token.isEmpty) {
-        print('❌ No token found in storage');
-        return null;
-      }
-
-      print('🔍 Checking stored token...');
-
-      // Vérifier le token avec l'API
-      try {
-        final response = await _dio.get(
-          ApiEndpoints.testAuth,
-          options: Options(headers: {'Authorization': 'Bearer $token'}),
+      final userJson = await _storage.read(key: 'user');
+      final token = await _storage.read(key: 'access_token');
+      
+      print('📱 Reading stored user: ${userJson != null ? 'Found' : 'Not found'}');
+      print('📱 Reading stored token: ${token != null ? 'Found' : 'Not found'}');
+      
+      if (userJson != null && token != null) {
+        final userData = jsonDecode(userJson);
+        
+        // Créer l'utilisateur avec le token récupéré
+        final user = UserModel.fromStorage(userData).copyWith(
+          accessToken: token,
         );
-
-        if (response.statusCode == 200 && response.data['success'] == true) {
-          print('✅ Token is valid');
-
-          // Récupérer le profil utilisateur
-          final profileResponse = await _dio.get(
-            ApiEndpoints.profile,
-            options: Options(headers: {'Authorization': 'Bearer $token'}),
-          );
-
-          if (profileResponse.statusCode == 200 &&
-              profileResponse.data['success'] == true) {
-            final user = UserModel.fromJson(profileResponse.data);
-            print('✅ User profile loaded from API: ${user.fullName}');
-
-            // Sauvegarder à nouveau pour mettre à jour les données
-            await SecureStorage.saveToken(token);
-            await SecureStorage.saveUserData(user.toJson().toString());
-
-            return user;
-          }
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 401) {
-          print('❌ Token expired or invalid');
-          await SecureStorage.clearAll();
-          return null;
-        }
-        print('⚠️ Error checking token: ${e.message}');
+        
+        return user;
       }
-
-      // Si le token n'est pas valide, vérifier les données stockées
-      final userData = await SecureStorage.getUserData();
-      if (userData != null && userData.isNotEmpty) {
-        try {
-          final jsonData = json.decode(userData);
-          final user = UserModel.fromJson(jsonData);
-          print('⚠️ Using cached user data (token check failed)');
-          return user;
-        } catch (e) {
-          print('❌ Error parsing stored user data: $e');
-        }
-      }
-
-      print('❌ No valid user found');
       return null;
     } catch (e) {
-      print('❌ Error getting stored user: $e');
+      print('❌ Error reading stored user: $e');
       return null;
     }
   }
+  
+  Future<void> logout() async {
+    try {
+      await _storage.delete(key: 'user');
+      await _storage.delete(key: 'access_token');
+      await _storage.delete(key: 'refresh_token');
+      print('✅ All credentials deleted from storage');
+    } catch (e) {
+      print('❌ Error during logout: $e');
+      // Continue même en cas d'erreur
+    }
+  }
+  
+  // Fonction utilitaire pour obtenir le minimum
+  int min(int a, int b) => a < b ? a : b;
 }

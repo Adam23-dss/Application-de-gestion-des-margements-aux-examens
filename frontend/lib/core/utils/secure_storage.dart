@@ -1,49 +1,87 @@
-import 'dart:math';
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static final SecureStorage _instance = SecureStorage._internal();
+  factory SecureStorage() => _instance;
+  SecureStorage._internal();
 
-  // Keys
-  static const String _tokenKey = 'auth_token';
-  static const String _userDataKey = 'user_data';
+  static SecureStorage get instance => _instance;
 
-  // Token methods
-  static Future<void> saveToken(String token) async {
-    if (token.isEmpty) {
-      print('⚠️ WARNING: Trying to save empty token');
-      return;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    ),
+  );
+
+  Future<void> write({required String key, required String value}) async {
+    try {
+      print('💾 Saving to secure storage - Key: $key');
+      print('💾 Value length: ${value.length}');
+      if (value.length < 50) {
+        print('💾 Value: $value');
+      } else {
+        print('💾 Value (first 50 chars): ${value.substring(0, 50)}...');
+      }
+      
+      await _storage.write(key: key, value: value);
+      print('✅ Saved to secure storage');
+    } catch (e) {
+      print('❌ Error saving to secure storage: $e');
+      rethrow;
     }
-    await _storage.write(key: _tokenKey, value: token);
-    print('💾 Token saved to secure storage');
-    print('   Token length: ${token.length}');
-    print('   First 20 chars: ${token.substring(0, min(20, token.length))}...');
   }
 
-  static Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+  Future<String?> read({required String key}) async {
+    try {
+      print('📖 Reading from secure storage - Key: $key');
+      final value = await _storage.read(key: key);
+      
+      if (value != null) {
+        print('✅ Found value for key: $key');
+        print('📖 Value length: ${value.length}');
+        if (value.length < 50) {
+          print('📖 Value: $value');
+        } else {
+          print('📖 Value (first 50 chars): ${value.substring(0, 50)}...');
+        }
+      } else {
+        print('⚠️ No value found for key: $key');
+      }
+      
+      return value;
+    } catch (e) {
+      print('❌ Error reading from secure storage: $e');
+      return null;
+    }
   }
 
-  static Future<void> deleteToken() async {
-    await _storage.delete(key: _tokenKey);
+  Future<void> delete({required String key}) async {
+    try {
+      await _storage.delete(key: key);
+      print('🗑️ Deleted key: $key');
+    } catch (e) {
+      print('❌ Error deleting from secure storage: $e');
+    }
   }
 
-  // User data methods
-  static Future<void> saveUserData(String userData) async {
-    await _storage.write(key: _userDataKey, value: userData);
+  Future<void> deleteAll() async {
+    try {
+      await _storage.deleteAll();
+      print('🗑️ All data deleted from secure storage');
+    } catch (e) {
+      print('❌ Error deleting all from secure storage: $e');
+    }
   }
 
-  static Future<String?> getUserData() async {
-    return await _storage.read(key: _userDataKey);
-  }
-
-  static Future<void> deleteUserData() async {
-    await _storage.delete(key: _userDataKey);
-  }
-
-  // Clear all data
-  static Future<void> clearAll() async {
-    await _storage.deleteAll();
+  Future<bool> containsKey({required String key}) async {
+    try {
+      return await _storage.containsKey(key: key);
+    } catch (e) {
+      print('❌ Error checking key: $e');
+      return false;
+    }
   }
 }

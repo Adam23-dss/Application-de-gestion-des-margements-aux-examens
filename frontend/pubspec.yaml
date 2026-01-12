@@ -61,10 +61,12 @@ dependencies:
   pdf: ^3.11.3
   excel: ^4.0.6
   crypto: ^3.0.7
+  shimmer: ^3.0.0
 
   # QR Code (Simulation pour MVP)
   qr_code_scanner: ^1.0.1
   mobile_scanner: ^7.1.4
+  camera: ^0.11.3
 
   # Loading / Feedback
   fluttertoast: ^9.0.0

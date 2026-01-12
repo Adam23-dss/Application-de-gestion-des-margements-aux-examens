@@ -26,7 +26,7 @@ class _DashboardPageState extends State<DashboardPage> {
     // Redirect based on role
     if (user.isAdmin) {
       return const AdminDashboard();
-    } else if (user.isSurveillant) {
+    } else if (user.isSupervisor) {
       return const ScanPage();
     }
     

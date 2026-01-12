@@ -54,7 +54,6 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       if (!loadMore) {
         await examProvider.loadExams();
       } else {
-        // Pour le vrai backend, vous devrez implémenter la pagination
         setState(() {
           _isLoadingMore = true;
         });
@@ -101,41 +100,14 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       appBar: CustomAppBar(
         title: 'Mes Examens',
         showBackButton: false,
+        showLogout: true, // Active le bouton de déconnexion dans l'app bar
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => _loadExams(),
             tooltip: 'Actualiser',
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') {
-                authProvider.logout();
-              }
-            },
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem(
-                  value: 'profile',
-                  child: ListTile(
-                    leading: const Icon(Icons.person),
-                    title: const Text('Profil'),
-                    onTap: () {
-                      // TODO: Naviguer vers le profil
-                    },
-                  ),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'logout',
-                  child: ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Déconnexion', style: TextStyle(color: Colors.red)),
-                  ),
-                ),
-              ];
-            },
-          ),
+          // Le bouton de déconnexion est maintenant géré par CustomAppBar
         ],
       ),
       body: Column(
@@ -257,6 +229,98 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         icon: const Icon(Icons.qr_code_scanner),
         label: const Text('Scanner QR'),
         elevation: 4,
+      ),
+      
+      // Menu de navigation dans le drawer
+      drawer: _buildDrawer(context, authProvider),
+    );
+  }
+  
+  Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    authProvider.user?.firstName.substring(0, 1).toUpperCase() ?? 'S',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  authProvider.user?.fullName ?? '',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  authProvider.user?.email ?? '',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.dashboard, color: Colors.blue),
+            title: const Text('Tableau de bord'),
+            onTap: () {
+              Navigator.pop(context);
+              // Pour le surveillant, on reste sur cette page
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.qr_code_scanner, color: Colors.green),
+            title: const Text('Scanner QR Code'),
+            onTap: () {
+              Navigator.pop(context);
+              _openQRScanner();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.people, color: Colors.purple),
+            title: const Text('Gérer les étudiants'),
+            onTap: () {
+              Navigator.pop(context);
+              // Naviguer vers la gestion des étudiants
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings, color: Colors.grey),
+            title: const Text('Paramètres'),
+            onTap: () {
+              Navigator.pop(context);
+              // Naviguer vers les paramètres
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.help, color: Colors.grey),
+            title: const Text('Aide & Support'),
+            onTap: () {
+              Navigator.pop(context);
+              // Naviguer vers l'aide
+            },
+          ),
+        ],
       ),
     );
   }
@@ -599,12 +663,14 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
   }
   
   void _openQRScanner() {
+    // Implémenter le scan QR code ici
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Scanner QR code - à implémenter'),
+        content: Text('Ouvrir le scanner QR code...'),
         duration: Duration(seconds: 2),
       ),
     );
+    // TODO: Implémenter la navigation vers le scanner QR
   }
   
   void _openNFCScanner() {
@@ -619,9 +685,10 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
   void _openManualInput() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Saisie manuelle - à implémenter'),
+        content: Text('Ouvrir la saisie manuelle...'),
         duration: Duration(seconds: 2),
       ),
     );
+    // TODO: Implémenter la navigation vers la saisie manuelle
   }
 }

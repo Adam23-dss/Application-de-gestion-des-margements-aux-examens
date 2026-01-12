@@ -20,7 +20,7 @@ class ExamRepository {
       print('📚 Fetching exams from API (page: $page, limit: $limit)');
 
       // Vérifier le token
-      final token = await SecureStorage.getToken();
+      final token = await SecureStorage.instance.read(key: 'access_token');
       if (token == null || token.isEmpty) {
         throw Exception('No authentication token found');
       }
@@ -95,7 +95,7 @@ class ExamRepository {
           throw Exception(responseData['message'] ?? 'Failed to fetch exams');
         }
       } else if (response.statusCode == 401) {
-        await SecureStorage.clearAll();
+        await SecureStorage.instance.deleteAll();
         throw Exception('Session expired. Please login again.');
       } else {
         throw Exception('API error: ${response.statusCode}');
@@ -109,7 +109,7 @@ class ExamRepository {
       }
 
       if (e.response?.statusCode == 401) {
-        await SecureStorage.clearAll();
+        await SecureStorage.instance.deleteAll();
         throw Exception('Session expired. Please login again.');
       }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend1/core/constants/api_endpoints.dart';
 
 class ExamModel {
   final int id;
@@ -247,25 +248,4 @@ class ExamResponse {
   }
 }
 
-class PaginationData {
-  final int currentPage;
-  final int totalPages;
-  final int totalItems;
-  final int itemsPerPage;
 
-  PaginationData({
-    required this.currentPage,
-    required this.totalPages,
-    required this.totalItems,
-    required this.itemsPerPage,
-  });
-
-  factory PaginationData.fromJson(Map<String, dynamic> json) {
-    return PaginationData(
-      currentPage: json['current_page'] ?? 1,
-      totalPages: json['total_pages'] ?? 1,
-      totalItems: json['total_items'] ?? 0,
-      itemsPerPage: json['items_per_page'] ?? 20,
-    );
-  }
-}

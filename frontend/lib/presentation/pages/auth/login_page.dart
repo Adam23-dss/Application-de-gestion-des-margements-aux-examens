@@ -291,13 +291,17 @@ class _LoginPageState extends State<LoginPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: AppColors.primary.withOpacity(0.1), // Fond semi-transparent
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary),
+          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
         ),
         child: Text(
           text,
-          style: TextStyle(fontSize: 12, color: AppColors.primary),
+          style: TextStyle(
+            fontSize: 12,
+            color:
+                AppColors.primary, // Texte en couleur primaire sur fond clair
+          ),
         ),
       ),
     );
