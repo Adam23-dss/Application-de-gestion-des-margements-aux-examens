@@ -98,7 +98,7 @@ class _ScanPageState extends State<ScanPage>
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-  
+
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Emploi du temps',
@@ -672,23 +672,211 @@ class _ScanPageState extends State<ScanPage>
 
   void _openQRScanner() {
     final examProvider = context.read<ExamProvider>();
+    final authProvider = context.read<AuthProvider>();
 
-    // Si un examen est en cours, l'utiliser
-    if (examProvider.inProgressExams.isNotEmpty) {
+    if (authProvider.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez vous connecter d\'abord'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (examProvider.exams.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucun examen disponible'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Pour admin: sélectionner un examen
+    if (authProvider.user?.isAdmin == true) {
+      _showExamSelectionDialog(examProvider);
+      return;
+    }
+
+    // Pour surveillant: premier examen en cours
+    final inProgressExams = examProvider.exams
+        .where((exam) => exam.status == 'in_progress')
+        .toList();
+
+    if (inProgressExams.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QRScannerPage(examId: inProgressExams.first.id),
+        ),
+      );
+    } else {
+      final scheduledExams = examProvider.exams
+          .where((exam) => exam.status == 'scheduled')
+          .toList();
+
+      if (scheduledExams.isNotEmpty) {
+        _showExamSelectionDialog(examProvider);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucun examen disponible pour le moment'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  // AJOUTER cette méthode :
+  void _showExamSelectionDialog(ExamProvider examProvider) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Sélectionner un examen'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: examProvider.exams.length,
+              itemBuilder: (context, index) {
+                final exam = examProvider.exams[index];
+                return ListTile(
+                  leading: const Icon(Icons.event, color: Colors.blue),
+                  title: Text(exam.name),
+                  subtitle: Text(
+                    '${exam.formattedDate} • ${exam.startTime} • ${exam.status}',
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QRScannerPage(examId: exam.id),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // MODIFIER _openManualInput() :
+  void _openManualInput() {
+    final examProvider = context.read<ExamProvider>();
+    final authProvider = context.read<AuthProvider>();
+
+    if (authProvider.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez vous connecter d\'abord'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (examProvider.exams.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucun examen disponible'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (authProvider.user?.isAdmin == true) {
+      _showExamSelectionForManual(examProvider);
+      return;
+    }
+
+    final inProgressExams = examProvider.exams
+        .where((exam) => exam.status == 'in_progress')
+        .toList();
+
+    if (inProgressExams.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) =>
-              QRScannerPage(examId: examProvider.inProgressExams.first.id),
+              ManualValidationPage(examId: inProgressExams.first.id),
         ),
       );
     } else {
-      // Sinon ouvrir sans examen spécifique
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const QRScannerPage()),
-      );
+      final scheduledExams = examProvider.exams
+          .where((exam) => exam.status == 'scheduled')
+          .toList();
+
+      if (scheduledExams.isNotEmpty) {
+        _showExamSelectionForManual(examProvider);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucun examen disponible pour le moment'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
+  }
+
+  // AJOUTER cette méthode :
+  void _showExamSelectionForManual(ExamProvider examProvider) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Sélectionner un examen'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: examProvider.exams.length,
+              itemBuilder: (context, index) {
+                final exam = examProvider.exams[index];
+                return ListTile(
+                  leading: const Icon(Icons.event, color: Colors.green),
+                  title: Text(exam.name),
+                  subtitle: Text(
+                    '${exam.formattedDate} • ${exam.startTime} • ${exam.status}',
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ManualValidationPage(examId: exam.id),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _openNFCScanner() {
@@ -698,27 +886,5 @@ class _ScanPageState extends State<ScanPage>
         duration: Duration(seconds: 2),
       ),
     );
-  }
-
-  void _openManualInput() {
-    final examProvider = context.read<ExamProvider>();
-
-    if (examProvider.inProgressExams.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ManualValidationPage(
-            examId: examProvider.inProgressExams.first.id,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucun examen en cours'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
   }
 }

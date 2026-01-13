@@ -10,13 +10,9 @@ import 'package:frontend1/core/themes/app_colors.dart';
 class ManualValidationPage extends StatefulWidget {
   final int examId;
   final StudentModel? student;
-  
-  const ManualValidationPage({
-    super.key,
-    required this.examId,
-    this.student,
-  });
-  
+
+  const ManualValidationPage({super.key, required this.examId, this.student});
+
   @override
   State<ManualValidationPage> createState() => _ManualValidationPageState();
 }
@@ -25,26 +21,26 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _studentCodeController = TextEditingController();
   final FocusNode _studentCodeFocusNode = FocusNode();
-  
+
   String _selectedStatus = 'present';
   String _validationMethod = 'manual';
   String? _notes;
-  
+
   bool _isSearching = false;
   bool _isValidating = false;
   List<StudentModel> _searchResults = [];
   StudentModel? _selectedStudent;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Si un étudiant est spécifié, le sélectionner
     if (widget.student != null) {
       _selectedStudent = widget.student;
       _studentCodeController.text = widget.student!.studentCode;
     }
-    
+
     // Focus sur le champ de code étudiant
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.student == null) {
@@ -52,7 +48,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       }
     });
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -60,7 +56,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
     _studentCodeFocusNode.dispose();
     super.dispose();
   }
-  
+
   Future<void> _searchStudents(String query) async {
     if (query.length < 2) {
       setState(() {
@@ -69,67 +65,84 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       });
       return;
     }
-    
+
     setState(() {
       _isSearching = true;
     });
-    
+
     try {
       final attendanceProvider = context.read<AttendanceProvider>();
       final results = await attendanceProvider.searchStudent(query);
-      
+
+      print('🔍 Search results: ${results.length} étudiants');
+      results.forEach((student) {
+        print('🎓 Student: ${student.studentCode} - ${student.fullName}');
+      });
+
       setState(() {
         _searchResults = results;
         _isSearching = false;
       });
+
+      // DEBUG: Afficher un snackbar avec le nombre de résultats
+      if (results.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${results.length} étudiant(s) trouvé(s)'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
     } catch (e) {
+      print('❌ Search error: $e');
       setState(() {
         _searchResults = [];
         _isSearching = false;
       });
+
       _showErrorSnackbar('Erreur de recherche: $e');
     }
   }
-  
+
   Future<void> _validateAttendance() async {
     if (_selectedStudent == null) {
       _showErrorSnackbar('Veuillez sélectionner un étudiant');
       return;
     }
-    
+
     if (_studentCodeController.text.isEmpty) {
       _showErrorSnackbar('Veuillez entrer un code étudiant');
       return;
     }
-    
+
     setState(() {
       _isValidating = true;
     });
-    
+
     try {
       final attendanceProvider = context.read<AttendanceProvider>();
-      
+
       await attendanceProvider.validateAttendance(
         examId: widget.examId,
         studentCode: _studentCodeController.text.trim().toUpperCase(),
         status: _selectedStatus,
         validationMethod: _validationMethod,
       );
-      
+
       _showSuccessSnackbar(
         'Présence ${_getStatusLabel(_selectedStatus)} validée pour ${_selectedStudent!.fullName}',
       );
-      
+
       // Réinitialiser le formulaire
       _resetForm();
-      
+
       // Retourner à la page précédente après un délai
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
           Navigator.pop(context);
         }
       });
-      
     } catch (e) {
       _showErrorSnackbar('Erreur: $e');
     } finally {
@@ -138,7 +151,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       });
     }
   }
-  
+
   void _selectStudent(StudentModel student) {
     setState(() {
       _selectedStudent = student;
@@ -146,11 +159,11 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       _searchResults = [];
       _searchController.clear();
     });
-    
+
     // Cacher le clavier
     FocusScope.of(context).unfocus();
   }
-  
+
   void _resetForm() {
     setState(() {
       _selectedStudent = null;
@@ -160,7 +173,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       _selectedStatus = 'present';
     });
   }
-  
+
   void _showSuccessSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -170,7 +183,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       ),
     );
   }
-  
+
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -180,7 +193,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       ),
     );
   }
-  
+
   String _getStatusLabel(String status) {
     switch (status) {
       case 'present':
@@ -195,7 +208,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
         return status;
     }
   }
-  
+
   Color _getStatusColor(String status) {
     switch (status) {
       case 'present':
@@ -210,16 +223,13 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
         return Colors.grey;
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    
+
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Validation Manuelle',
-        showBackButton: true,
-      ),
+      appBar: CustomAppBar(title: 'Validation Manuelle', showBackButton: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -258,19 +268,16 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Recherche étudiant
             const Text(
               'Rechercher un étudiant',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            
+
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -293,31 +300,25 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
               ),
               onChanged: _searchStudents,
             ),
-            
+
             // Résultats de recherche
             if (_isSearching)
               const Padding(
                 padding: EdgeInsets.all(16),
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                child: Center(child: CircularProgressIndicator()),
               ),
-            
-            if (_searchResults.isNotEmpty)
-              _buildSearchResults(),
-            
+
+            if (_searchResults.isNotEmpty) _buildSearchResults(),
+
             const SizedBox(height: 24),
-            
+
             // Code étudiant manuel
             const Text(
               'Ou saisir le code manuellement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            
+
             TextField(
               controller: _studentCodeController,
               focusNode: _studentCodeFocusNode,
@@ -344,28 +345,25 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                 }
               },
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             if (_selectedStudent != null)
               StudentCard(
                 student: _selectedStudent!,
                 onTap: () {},
                 showValidationStatus: false,
               ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Statut de présence
             const Text(
               'Statut de présence',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            
+
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -376,41 +374,43 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                 _buildStatusOption('excused', 'Excusé', Icons.medical_services),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Méthode de validation
             const Text(
               'Méthode de validation',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            
+
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildValidationMethodOption('manual', 'Manuelle', Icons.touch_app),
-                _buildValidationMethodOption('qr_code', 'QR Code', Icons.qr_code),
+                _buildValidationMethodOption(
+                  'manual',
+                  'Manuelle',
+                  Icons.touch_app,
+                ),
+                _buildValidationMethodOption(
+                  'qr_code',
+                  'QR Code',
+                  Icons.qr_code,
+                ),
                 _buildValidationMethodOption('nfc', 'NFC', Icons.nfc),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Notes (optionnel)
             const Text(
               'Notes (optionnel)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            
+
             TextField(
               maxLines: 3,
               decoration: InputDecoration(
@@ -425,9 +425,9 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                 });
               },
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Bouton de validation
             SizedBox(
               width: double.infinity,
@@ -447,7 +447,9 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Row(
@@ -466,9 +468,9 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                       ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Bouton annuler
             SizedBox(
               width: double.infinity,
@@ -483,10 +485,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
                 ),
                 child: const Text(
                   'Annuler',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -495,7 +494,7 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       ),
     );
   }
-  
+
   Widget _buildSearchResults() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,15 +523,19 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       ],
     );
   }
-  
+
   Widget _buildStatusOption(String value, String label, IconData icon) {
     final isSelected = _selectedStatus == value;
-    
+
     return ChoiceChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: isSelected ? Colors.white : _getStatusColor(value)),
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.white : _getStatusColor(value),
+          ),
           const SizedBox(width: 6),
           Text(label),
         ],
@@ -559,15 +562,23 @@ class _ManualValidationPageState extends State<ManualValidationPage> {
       ),
     );
   }
-  
-  Widget _buildValidationMethodOption(String value, String label, IconData icon) {
+
+  Widget _buildValidationMethodOption(
+    String value,
+    String label,
+    IconData icon,
+  ) {
     final isSelected = _validationMethod == value;
-    
+
     return ChoiceChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: isSelected ? Colors.white : Colors.grey[700]),
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.white : Colors.grey[700],
+          ),
           const SizedBox(width: 6),
           Text(label),
         ],
@@ -601,14 +612,14 @@ class QuickValidationPage extends StatefulWidget {
   final int examId;
   final String initialCode;
   final String validationMethod;
-  
+
   const QuickValidationPage({
     super.key,
     required this.examId,
     this.initialCode = '',
     this.validationMethod = 'qr_code',
   });
-  
+
   @override
   State<QuickValidationPage> createState() => _QuickValidationPageState();
 }
@@ -616,14 +627,14 @@ class QuickValidationPage extends StatefulWidget {
 class _QuickValidationPageState extends State<QuickValidationPage> {
   late String _studentCode;
   late String _validationMethod;
-  
+
   @override
   void initState() {
     super.initState();
     _studentCode = widget.initialCode;
     _validationMethod = widget.validationMethod;
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -638,17 +649,16 @@ class _QuickValidationPageState extends State<QuickValidationPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                _validationMethod == 'qr_code' ? Icons.qr_code_scanner : Icons.nfc,
+                _validationMethod == 'qr_code'
+                    ? Icons.qr_code_scanner
+                    : Icons.nfc,
                 size: 120,
                 color: AppColors.primary.withOpacity(0.5),
               ),
               const SizedBox(height: 32),
               const Text(
                 'Prêt à scanner',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Text(
@@ -656,13 +666,10 @@ class _QuickValidationPageState extends State<QuickValidationPage> {
                     ? 'Scannez le QR code de l\'étudiant'
                     : 'Approchez la carte étudiante NFC',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 32),
-              
+
               if (_studentCode.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -693,7 +700,7 @@ class _QuickValidationPageState extends State<QuickValidationPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 ElevatedButton.icon(
                   onPressed: () {
                     // TODO: Valider la présence
@@ -705,19 +712,18 @@ class _QuickValidationPageState extends State<QuickValidationPage> {
                   ),
                 ),
               ],
-              
+
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 16),
-              
+
               TextButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ManualValidationPage(
-                        examId: widget.examId,
-                      ),
+                      builder: (context) =>
+                          ManualValidationPage(examId: widget.examId),
                     ),
                   );
                 },
