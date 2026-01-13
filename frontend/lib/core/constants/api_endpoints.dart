@@ -1,3 +1,4 @@
+// lib/core/constants/api_endpoints.dart
 class ApiEndpoints {
   // Base URL
   static const String baseUrl = 'https://application-de-gestion-des-margements.onrender.com/api';
@@ -18,8 +19,8 @@ class ApiEndpoints {
   // Attendance
   static const String attendance = '$baseUrl/attendance';
   static const String validateAttendance = '$attendance/validate';
-  static String examAttendance(int id) => '$attendance/exam/$id';
-  static String attendanceStats(int id) => '$attendance/stats/$id';
+  static String examAttendance(int examId) => '$attendance/exam/$examId';
+  static String attendanceStats(int examId) => '$attendance/stats/$examId';
   
   // Students
   static const String students = '$baseUrl/students';
@@ -34,10 +35,11 @@ class ApiEndpoints {
   static const String rooms = '$baseUrl/rooms';
   static const String availableRooms = '$rooms/available';
   
-  // Stats
+  // Stats - IMPORTANT: Corrigé ici !
   static const String stats = '$baseUrl/stats';
   static const String dashboardStats = '$stats/dashboard';
-  static const String dailyStats = '$stats/daily';
+  static String dailyStats(String date) => '$stats/daily/$date';
+  static String examStats(String examId) => '$stats/exam/$examId';
   
   // Exports
   static const String exports = '$baseUrl/exports';

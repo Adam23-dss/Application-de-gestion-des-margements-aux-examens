@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend1/data/models/exam_model.dart';
+import 'package:frontend1/presentation/pages/attendance/manual_validation_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
+import 'package:frontend1/presentation/pages/attendance/qr_scanner_page.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/providers/exam_provider.dart';
@@ -17,39 +19,40 @@ class ScanPage extends StatefulWidget {
   State<ScanPage> createState() => _ScanPageState();
 }
 
-class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin {
+class _ScanPageState extends State<ScanPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _currentPage = 1;
   final int _itemsPerPage = 10;
   bool _hasMore = true;
   bool _isLoadingMore = false;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadExams();
     });
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadExams({bool loadMore = false}) async {
     final examProvider = context.read<ExamProvider>();
-    
+
     if (!loadMore) {
       _currentPage = 1;
       _hasMore = true;
     }
-    
+
     if (_isLoadingMore) return;
-    
+
     try {
       if (!loadMore) {
         await examProvider.loadExams();
@@ -57,14 +60,14 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         setState(() {
           _isLoadingMore = true;
         });
-        
+
         // Exemple de chargement paginé (à adapter selon votre API)
         // final response = await _repository.getExams(page: _currentPage, limit: _itemsPerPage);
-        
+
         setState(() {
           _isLoadingMore = false;
           _currentPage++;
-          
+
           // Vérifier s'il y a encore des données
           if (examProvider.exams.length < _itemsPerPage) {
             _hasMore = false;
@@ -78,12 +81,12 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final examProvider = context.watch<ExamProvider>();
-    
+
     // Si pas connecté, retourner au login
     if (authProvider.user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -95,10 +98,10 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+  
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Mes Examens',
+        title: 'Emploi du temps',
         showBackButton: false,
         showLogout: true, // Active le bouton de déconnexion dans l'app bar
         actions: [
@@ -131,7 +134,10 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   radius: 24,
                   backgroundColor: Colors.white,
                   child: Text(
-                    authProvider.user?.firstName.substring(0, 1).toUpperCase() ?? 'S',
+                    authProvider.user?.firstName
+                            .substring(0, 1)
+                            .toUpperCase() ??
+                        'S',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -153,7 +159,9 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                         ),
                       ),
                       Text(
-                        authProvider.user?.isAdmin == true ? 'Administrateur' : 'Surveillant d\'examens',
+                        authProvider.user?.isAdmin == true
+                            ? 'Administrateur'
+                            : 'Surveillant d\'examens',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.9),
@@ -163,7 +171,10 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -186,7 +197,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
               ],
             ),
           ),
-          
+
           // Tabs
           Container(
             color: Colors.white,
@@ -203,22 +214,38 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
               ],
             ),
           ),
-          
+
           // Contenu
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildExamList('Aujourd\'hui', examProvider.todayExams, examProvider),
-                _buildExamList('À venir', examProvider.upcomingExams, examProvider),
-                _buildExamList('En cours', examProvider.inProgressExams, examProvider),
-                _buildExamList('Terminés', examProvider.completedExams, examProvider),
+                _buildExamList(
+                  'Aujourd\'hui',
+                  examProvider.todayExams,
+                  examProvider,
+                ),
+                _buildExamList(
+                  'À venir',
+                  examProvider.upcomingExams,
+                  examProvider,
+                ),
+                _buildExamList(
+                  'En cours',
+                  examProvider.inProgressExams,
+                  examProvider,
+                ),
+                _buildExamList(
+                  'Terminés',
+                  examProvider.completedExams,
+                  examProvider,
+                ),
               ],
             ),
           ),
         ],
       ),
-      
+
       // Floating Action Button pour scan QR
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -230,21 +257,19 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         label: const Text('Scanner QR'),
         elevation: 4,
       ),
-      
+
       // Menu de navigation dans le drawer
       drawer: _buildDrawer(context, authProvider),
     );
   }
-  
+
   Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-            ),
+            decoration: BoxDecoration(color: AppColors.primary),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -252,7 +277,10 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   radius: 30,
                   backgroundColor: Colors.white,
                   child: Text(
-                    authProvider.user?.firstName.substring(0, 1).toUpperCase() ?? 'S',
+                    authProvider.user?.firstName
+                            .substring(0, 1)
+                            .toUpperCase() ??
+                        'S',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -324,14 +352,16 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       ),
     );
   }
-  
-  Widget _buildExamList(String title, List<ExamModel> exams, ExamProvider examProvider) {
+
+  Widget _buildExamList(
+    String title,
+    List<ExamModel> exams,
+    ExamProvider examProvider,
+  ) {
     if (examProvider.isLoading && exams.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
-    
+
     if (examProvider.error != null && exams.isEmpty) {
       return Center(
         child: Column(
@@ -356,24 +386,17 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         ),
       );
     }
-    
+
     if (exams.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              _getEmptyIcon(title),
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(_getEmptyIcon(title), size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               _getEmptyMessage(title),
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Text(
@@ -385,7 +408,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: () => _loadExams(),
       child: ListView.builder(
@@ -406,25 +429,21 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                     ),
                   );
           }
-          
+
           final exam = exams[index];
           return ExamCard(
             exam: exam,
             onTap: () {
               _openExamDetails(exam);
             },
-            onStart: exam.status == 'scheduled'
-                ? () => _startExam(exam)
-                : null,
-            onEnd: exam.status == 'in_progress'
-                ? () => _endExam(exam)
-                : null,
+            onStart: exam.status == 'scheduled' ? () => _startExam(exam) : null,
+            onEnd: exam.status == 'in_progress' ? () => _endExam(exam) : null,
           );
         },
       ),
     );
   }
-  
+
   IconData _getEmptyIcon(String title) {
     switch (title) {
       case 'Aujourd\'hui':
@@ -439,7 +458,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         return Icons.event_note;
     }
   }
-  
+
   String _getEmptyMessage(String title) {
     switch (title) {
       case 'Aujourd\'hui':
@@ -454,7 +473,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         return 'Aucun examen';
     }
   }
-  
+
   String _getEmptySubtitle(String title) {
     switch (title) {
       case 'Aujourd\'hui':
@@ -469,19 +488,17 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         return '';
     }
   }
-  
+
   void _openExamDetails(ExamModel exam) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ExamDetailPage(examId: exam.id),
-      ),
+      MaterialPageRoute(builder: (context) => ExamDetailPage(examId: exam.id)),
     );
   }
-  
+
   Future<void> _startExam(ExamModel exam) async {
     final examProvider = context.read<ExamProvider>();
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -499,7 +516,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       try {
         await examProvider.startExam(exam.id);
@@ -511,18 +528,15 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
-  
+
   Future<void> _endExam(ExamModel exam) async {
     final examProvider = context.read<ExamProvider>();
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -540,7 +554,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       try {
         await examProvider.endExam(exam.id);
@@ -552,15 +566,12 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
-  
+
   void _showScanOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -584,16 +595,13 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               const Text(
                 'Options de scan',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               _buildScanOption(
                 context,
                 Icons.qr_code_scanner,
@@ -604,7 +612,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   _openQRScanner();
                 },
               ),
-              
+
               _buildScanOption(
                 context,
                 Icons.nfc,
@@ -615,7 +623,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   _openNFCScanner();
                 },
               ),
-              
+
               _buildScanOption(
                 context,
                 Icons.keyboard,
@@ -626,9 +634,9 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   _openManualInput();
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
@@ -642,7 +650,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       },
     );
   }
-  
+
   Widget _buildScanOption(
     BuildContext context,
     IconData icon,
@@ -661,18 +669,28 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       ),
     );
   }
-  
+
   void _openQRScanner() {
-    // Implémenter le scan QR code ici
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ouvrir le scanner QR code...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    // TODO: Implémenter la navigation vers le scanner QR
+    final examProvider = context.read<ExamProvider>();
+
+    // Si un examen est en cours, l'utiliser
+    if (examProvider.inProgressExams.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              QRScannerPage(examId: examProvider.inProgressExams.first.id),
+        ),
+      );
+    } else {
+      // Sinon ouvrir sans examen spécifique
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const QRScannerPage()),
+      );
+    }
   }
-  
+
   void _openNFCScanner() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -681,14 +699,26 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
       ),
     );
   }
-  
+
   void _openManualInput() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ouvrir la saisie manuelle...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    // TODO: Implémenter la navigation vers la saisie manuelle
+    final examProvider = context.read<ExamProvider>();
+
+    if (examProvider.inProgressExams.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ManualValidationPage(
+            examId: examProvider.inProgressExams.first.id,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucun examen en cours'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 }

@@ -24,6 +24,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    
+    // Charger les données au démarrage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+  }
+  
+  void _loadInitialData() {
+    final dashboardProvider = context.read<DashboardProvider>();
+    final examProvider = context.read<ExamProvider>();
+    
+    dashboardProvider.loadDashboardStats();
+    dashboardProvider.loadDailyStats();
+    examProvider.loadExams();
   }
   
   @override
@@ -52,17 +66,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       appBar: CustomAppBar(
         title: 'Tableau de Bord Admin',
         showBackButton: false,
-        showLogout: true, // Ajouter le bouton de déconnexion
+        showLogout: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // Rafraîchir les données
-              final dashboardProvider = context.read<DashboardProvider>();
-              final examProvider = context.read<ExamProvider>();
-              dashboardProvider.loadDashboardStats();
-              examProvider.loadExams();
-            },
+            onPressed: _loadInitialData,
             tooltip: 'Actualiser',
           ),
         ],
@@ -136,9 +144,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white.withOpacity(0.3)),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Admin',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -164,19 +172,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             ),
           ),
           
-          // Contenu des tabs
+          // Contenu des tabs - CORRECTION ICI
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                // Tab 1: Vue Globale
-                _buildGlobalView(DashboardProvider(), ExamProvider()),
+                // Tab 1: Vue Globale - UTILISE LE PROVIDER EXISTANT
+                const _GlobalView(),
                 
-                // Tab 2: Aujourd'hui
-                _buildTodayView(DashboardProvider()),
+                // Tab 2: Aujourd'hui - UTILISE LE PROVIDER EXISTANT
+                const _TodayView(),
                 
                 // Tab 3: Statistiques
-                _buildStatisticsView(),
+                const _StatisticsView(),
               ],
             ),
           ),
@@ -185,380 +193,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       
       // Menu latéral
       drawer: _buildDrawer(context, authProvider),
-    );
-  }
-  
-  Widget _buildGlobalView(DashboardProvider dashboardProvider, ExamProvider examProvider) {
-    if (dashboardProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    
-    final stats = dashboardProvider.dashboardStats;
-    
-    return RefreshIndicator(
-      onRefresh: () => dashboardProvider.loadDashboardStats(),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Statistiques principales
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
-              children: [
-                StatCard(
-                  title: 'Utilisateurs',
-                  value: stats?.totalUsers.toString() ?? '0',
-                  icon: Icons.people,
-                  color: Colors.blue,
-                  subtitle: 'Actifs',
-                ),
-                StatCard(
-                  title: 'Étudiants',
-                  value: stats?.totalStudents.toString() ?? '0',
-                  icon: Icons.school,
-                  color: Colors.green,
-                  subtitle: 'Inscrits',
-                ),
-                StatCard(
-                  title: 'Examens Aujourd\'hui',
-                  value: stats?.todayExams.toString() ?? '0',
-                  icon: Icons.event,
-                  color: Colors.orange,
-                  subtitle: 'Programmés',
-                ),
-                StatCard(
-                  title: 'Présences',
-                  value: stats?.todayPresent.toString() ?? '0',
-                  icon: Icons.check_circle,
-                  color: Colors.purple,
-                  subtitle: 'Validées aujourd\'hui',
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Examens en cours
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Examens en cours',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (examProvider.inProgressExams.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          'Aucun examen en cours',
-                          style: TextStyle(color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    else
-                      ...examProvider.inProgressExams.take(3).map((exam) {
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: exam.statusColor.withOpacity(0.2),
-                            child: Icon(
-                              Icons.play_circle_filled,
-                              color: exam.statusColor,
-                            ),
-                          ),
-                          title: Text(exam.name),
-                          subtitle: Text('${exam.formattedDate} à ${exam.startTime}'),
-                          trailing: Text(
-                            '${exam.presentCount ?? 0}/${exam.totalStudents}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          onTap: () {
-                            // Naviguer vers les détails de l'examen
-                          },
-                        );
-                      }).toList(),
-                    
-                    if (examProvider.inProgressExams.length > 3)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            // Voir tous les examens
-                          },
-                          child: const Text('Voir tout'),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Actions rapides
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Actions rapides',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        _buildQuickAction(
-                          Icons.add,
-                          'Nouvel examen',
-                          Colors.blue,
-                          () {
-                            // Créer un examen
-                          },
-                        ),
-                        _buildQuickAction(
-                          Icons.person_add,
-                          'Ajouter utilisateur',
-                          Colors.green,
-                          () {
-                            // Ajouter un utilisateur
-                          },
-                        ),
-                        _buildQuickAction(
-                          Icons.download,
-                          'Exporter rapports',
-                          Colors.orange,
-                          () {
-                            // Exporter des rapports
-                          },
-                        ),
-                        _buildQuickAction(
-                          Icons.settings,
-                          'Paramètres',
-                          Colors.grey,
-                          () {
-                            // Aller aux paramètres
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildTodayView(DashboardProvider dashboardProvider) {
-    if (dashboardProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    
-    final dailyStats = dashboardProvider.dailyStats;
-    
-    return RefreshIndicator(
-      onRefresh: () => dashboardProvider.loadDailyStats(),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Sélecteur de date
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today, color: AppColors.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(dashboardProvider.selectedDate),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.date_range),
-                      onPressed: () async {
-                        final selectedDate = await showDatePicker(
-                          context: context,
-                          initialDate: dashboardProvider.selectedDate,
-                          firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                          lastDate: DateTime.now().add(const Duration(days: 30)),
-                        );
-                        if (selectedDate != null) {
-                          dashboardProvider.setSelectedDate(selectedDate);
-                          await dashboardProvider.loadDailyStats();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Totaux du jour
-            if (dailyStats != null) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Résumé du jour',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildDailyStat(
-                            'Présents',
-                            dailyStats.totals.present.toString(),
-                            Colors.green,
-                            Icons.check_circle,
-                          ),
-                          _buildDailyStat(
-                            'Absents',
-                            dailyStats.totals.absent.toString(),
-                            Colors.red,
-                            Icons.cancel,
-                          ),
-                          _buildDailyStat(
-                            'Taux',
-                            '${dailyStats.attendanceRate}%',
-                            Colors.blue,
-                            Icons.percent,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Liste des examens du jour
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Examens du jour',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${dailyStats.exams.length} examens',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      if (dailyStats.exams.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'Aucun examen prévu aujourd\'hui',
-                            style: TextStyle(color: Colors.grey),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      else
-                        ...dailyStats.exams.map((exam) {
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.blue.withOpacity(0.1),
-                                child: const Icon(Icons.event, color: Colors.blue),
-                              ),
-                              title: Text(exam.examName),
-                              subtitle: Text('${exam.startTime} - ${exam.endTime}'),
-                              trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${exam.presentCount}/${exam.totalStudents}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${(exam.totalStudents > 0 ? (exam.presentCount / exam.totalStudents * 100) : 0).toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                // Voir les détails de l'examen
-                              },
-                            ),
-                          );
-                        }).toList(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildStatisticsView() {
-    return const Center(
-      child: Text(
-        'Statistiques détaillées',
-        style: TextStyle(fontSize: 20),
-      ),
     );
   }
   
@@ -759,8 +393,472 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               Navigator.pop(context);
             },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- NOUVELLES CLASSES POUR CHAQUE TAB ---
+
+// Tab 1: Vue Globale
+class _GlobalView extends StatelessWidget {
+  const _GlobalView();
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboardProvider = context.watch<DashboardProvider>();
+    final examProvider = context.watch<ExamProvider>();
+    
+    if (dashboardProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    final stats = dashboardProvider.dashboardStats;
+    
+    return RefreshIndicator(
+      onRefresh: () => dashboardProvider.loadDashboardStats(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Statistiques principales
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.2,
+              children: [
+                StatCard(
+                  title: 'Utilisateurs',
+                  value: stats?.totalUsers.toString() ?? '0',
+                  icon: Icons.people,
+                  color: Colors.blue,
+                  subtitle: 'Actifs',
+                ),
+                StatCard(
+                  title: 'Étudiants',
+                  value: stats?.totalStudents.toString() ?? '0',
+                  icon: Icons.school,
+                  color: Colors.green,
+                  subtitle: 'Inscrits',
+                ),
+                StatCard(
+                  title: 'Examens Aujourd\'hui',
+                  value: stats?.todayExams.toString() ?? '0',
+                  icon: Icons.event,
+                  color: Colors.orange,
+                  subtitle: 'Programmés',
+                ),
+                StatCard(
+                  title: 'Présences',
+                  value: stats?.todayPresent.toString() ?? '0',
+                  icon: Icons.check_circle,
+                  color: Colors.purple,
+                  subtitle: 'Validées aujourd\'hui',
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Examens en cours
+            Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Examens en cours',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (examProvider.inProgressExams.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          'Aucun examen en cours',
+                          style: TextStyle(color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    else
+                      ...examProvider.inProgressExams.take(3).map((exam) {
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: exam.statusColor.withOpacity(0.2),
+                            child: Icon(
+                              Icons.play_circle_filled,
+                              color: exam.statusColor,
+                            ),
+                          ),
+                          title: Text(exam.name),
+                          subtitle: Text('${exam.formattedDate} à ${exam.startTime}'),
+                          trailing: Text(
+                            '${exam.presentCount ?? 0}/${exam.totalStudents}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          onTap: () {
+                            // Naviguer vers les détails de l'examen
+                          },
+                        );
+                      }).toList(),
+                    
+                    if (examProvider.inProgressExams.length > 3)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            // Voir tous les examens
+                          },
+                          child: const Text('Voir tout'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Actions rapides
+            Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Actions rapides',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _buildQuickAction(
+                          context,
+                          Icons.add,
+                          'Nouvel examen',
+                          Colors.blue,
+                          () {
+                            // Créer un examen
+                          },
+                        ),
+                        _buildQuickAction(
+                          context,
+                          Icons.person_add,
+                          'Ajouter utilisateur',
+                          Colors.green,
+                          () {
+                            // Ajouter un utilisateur
+                          },
+                        ),
+                        _buildQuickAction(
+                          context,
+                          Icons.download,
+                          'Exporter rapports',
+                          Colors.orange,
+                          () {
+                            // Exporter des rapports
+                          },
+                        ),
+                        _buildQuickAction(
+                          context,
+                          Icons.settings,
+                          'Paramètres',
+                          Colors.grey,
+                          () {
+                            // Aller aux paramètres
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildQuickAction(BuildContext context, IconData icon, String label, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Tab 2: Aujourd'hui
+class _TodayView extends StatelessWidget {
+  const _TodayView();
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboardProvider = context.watch<DashboardProvider>();
+    
+    if (dashboardProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    final dailyStats = dashboardProvider.dailyStats;
+    
+    return RefreshIndicator(
+      onRefresh: () => dashboardProvider.loadDailyStats(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Sélecteur de date
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(dashboardProvider.selectedDate),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.date_range),
+                      onPressed: () async {
+                        final selectedDate = await showDatePicker(
+                          context: context,
+                          initialDate: dashboardProvider.selectedDate,
+                          firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                          lastDate: DateTime.now().add(const Duration(days: 30)),
+                        );
+                        if (selectedDate != null) {
+                          dashboardProvider.setSelectedDate(selectedDate);
+                          await dashboardProvider.loadDailyStats();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Totaux du jour
+            if (dailyStats != null) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Résumé du jour',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildDailyStat(
+                            'Présents',
+                            dailyStats.totals.present.toString(),
+                            Colors.green,
+                            Icons.check_circle,
+                          ),
+                          _buildDailyStat(
+                            'Absents',
+                            dailyStats.totals.absent.toString(),
+                            Colors.red,
+                            Icons.cancel,
+                          ),
+                          _buildDailyStat(
+                            'Taux',
+                            '${dailyStats.attendanceRate}%',
+                            Colors.blue,
+                            Icons.percent,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Liste des examens du jour
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Examens du jour',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${dailyStats.exams.length} examens',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      if (dailyStats.exams.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Aucun examen prévu aujourd\'hui',
+                            style: TextStyle(color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      else
+                        ...dailyStats.exams.map((exam) {
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.blue.withOpacity(0.1),
+                                child: const Icon(Icons.event, color: Colors.blue),
+                              ),
+                              title: Text(exam.examName),
+                              subtitle: Text('${exam.startTime} - ${exam.endTime}'),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${exam.presentCount}/${exam.totalStudents}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${(exam.totalStudents > 0 ? (exam.presentCount / exam.totalStudents * 100) : 0).toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                // Voir les détails de l'examen
+                              },
+                            ),
+                          );
+                        }).toList(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildDailyStat(String title, String value, Color color, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 24, color: color),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
       ],
-    ),
+    );
+  }
+}
+
+// Tab 3: Statistiques
+class _StatisticsView extends StatelessWidget {
+  const _StatisticsView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Statistiques détaillées',
+        style: TextStyle(fontSize: 20),
+      ),
     );
   }
 }
