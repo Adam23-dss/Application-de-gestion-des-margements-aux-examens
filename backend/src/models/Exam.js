@@ -153,7 +153,6 @@ class Exam {
     }
     
     // Ajouter updated_at
-    paramCount++;
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     
     // Ajouter l'ID

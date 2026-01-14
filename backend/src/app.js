@@ -117,6 +117,7 @@ app.use((req, res) => {
       'GET  /api/students/:id (protected)',
       'GET  /api/exams (protected)',
       'GET  /api/exams/:id (protected)',
+      'PUT  /api/exams/:id (protected)',
       'POST /api/exams/:id/start (protected)',
       'POST /api/exams/:id/end (protected)',
       'GET  /api/exams/:id/students (protected)',
