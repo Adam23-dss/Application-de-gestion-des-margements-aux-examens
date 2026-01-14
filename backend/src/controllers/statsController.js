@@ -61,28 +61,44 @@ class StatsController {
   }
 
   // GET /api/stats/exam/:id - Statistiques détaillées examen
-  static async getExamStats(examId) {
-  const query = `
-    SELECT
-      COUNT(*) AS total,
-      COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present,
-      COUNT(CASE WHEN a.status = 'absent' THEN 1 END) AS absent,
-      COUNT(CASE WHEN a.status = 'late' THEN 1 END) AS late,
-      COUNT(CASE WHEN a.status = 'excused' THEN 1 END) AS excused,
-      ROUND(
-        COUNT(CASE WHEN a.status = 'present' THEN 1 END)::FLOAT /
-        NULLIF(COUNT(*), 0) * 100,
-        2
-      ) AS attendance_rate
-    FROM exam_registrations er
-    LEFT JOIN attendance a ON er.exam_id = a.exam_id
-      AND er.student_id = a.student_id
-    WHERE er.exam_id = $1
-  `;
-  
-  const result = await db.query(query, [examId]);
-  return result.rows[0];
-}
+  static async getExamStats(req, res) {
+    try {
+      const examId = req.params.id;
+
+      const query = `
+      SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS present,
+        SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) AS absent,
+        SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) AS late,
+        SUM(CASE WHEN a.status = 'excused' THEN 1 ELSE 0 END) AS excused,
+        ROUND(
+          SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END)::numeric /
+          NULLIF(COUNT(*), 0) * 100,
+          2
+        ) AS attendance_rate
+      FROM exam_registrations er
+      LEFT JOIN attendance a ON er.exam_id = a.exam_id
+        AND er.student_id = a.student_id
+      WHERE er.exam_id = $1
+    `;
+
+      const result = await db.query(query, [examId]);
+
+      return res.status(200).json({
+        success: true,
+        stats: result.rows[0] // <= important
+      });
+
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        success: false,
+        error: "SERVER_ERROR",
+        message: err.message
+      });
+    }
+  }
 
 
   // GET /api/stats/daily/:date? - Statistiques journalières
