@@ -71,49 +71,52 @@ class ExamModel {
     );
   }
 
+  // Factory method amélioré pour gérer les données partielles
   factory ExamModel.fromJson(Map<String, dynamic> json) {
-    print('Parsing exam JSON: ${json.keys.toList()}');
+    print('📄 Parsing exam JSON (keys: ${json.keys.toList()})');
 
-    // Parser la date - peut être String ou déjà DateTime
+    // 1. Parser l'ID
+    final id = json['id'] ?? json['_id'] ?? 0;
+
+    // 2. Parser la date - gérer différents formats
     DateTime examDate;
-    if (json['exam_date'] is String) {
-      examDate = DateTime.parse(json['exam_date']);
-    } else if (json['exam_date'] is DateTime) {
-      examDate = json['exam_date'];
-    } else {
+    try {
+      if (json['exam_date'] is String) {
+        examDate = DateTime.parse(json['exam_date']);
+      } else if (json['exam_date'] is DateTime) {
+        examDate = json['exam_date'];
+      } else {
+        examDate = DateTime.now();
+      }
+    } catch (e) {
+      print('⚠️ Error parsing exam_date: $e, using current date');
       examDate = DateTime.now();
     }
 
-    // Obtenir les informations de cours et salle si elles sont incluses
-    String? courseName;
-    String? roomName;
+    // 3. Parser le nom (peut être manquant dans les réponses partielles)
+    final name = json['name']?.toString() ?? 'Examen sans nom';
 
-    if (json['course'] is Map) {
-      courseName = json['course']['name'];
-    } else if (json['course_name'] is String) {
-      courseName = json['course_name'];
-    }
+    // 4. Parser le statut (par défaut 'scheduled')
+    final status = json['status']?.toString() ?? 'scheduled';
 
-    if (json['room'] is Map) {
-      roomName = json['room']['name'];
-    } else if (json['room_name'] is String) {
-      roomName = json['room_name'];
-    }
-
+    // 5. Parser les champs optionnels qui peuvent être null dans les réponses partielles
     return ExamModel(
-      id: json['id'] ?? json['_id'] ?? 0,
+      id: id,
       courseId: json['course_id'],
-      name: json['name']?.toString() ?? 'Examen sans nom',
+      name: name,
       description: json['description']?.toString(),
       examDate: examDate,
       startTime: json['start_time']?.toString() ?? '09:00',
       endTime: json['end_time']?.toString() ?? '12:00',
       roomId: json['room_id'],
       supervisorId: json['supervisor_id'],
-      status: json['status']?.toString() ?? 'scheduled',
+      status: status,
       totalStudents: (json['total_students'] ?? 0) as int,
-      courseName: courseName,
-      roomName: roomName,
+      courseName:
+          json['course_name']?.toString() ??
+          json['course']?['name']?.toString(),
+      roomName:
+          json['room_name']?.toString() ?? json['room']?['name']?.toString(),
       presentCount: json['present_count'] as int?,
     );
   }
@@ -247,5 +250,3 @@ class ExamResponse {
     }
   }
 }
-
-

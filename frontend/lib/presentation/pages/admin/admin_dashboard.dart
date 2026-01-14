@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:frontend1/presentation/pages/admin/create_exam_page.dart';
+import 'package:frontend1/presentation/pages/admin/manage_exams_page.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
 import 'package:provider/provider.dart';
@@ -17,39 +19,40 @@ class AdminDashboard extends StatefulWidget {
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProviderStateMixin {
+class _AdminDashboardState extends State<AdminDashboard>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Charger les données au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
   }
-  
+
   void _loadInitialData() {
     final dashboardProvider = context.read<DashboardProvider>();
     final examProvider = context.read<ExamProvider>();
-    
+
     dashboardProvider.loadDashboardStats();
     dashboardProvider.loadDailyStats();
     examProvider.loadExams();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    
+
     // Vérifier que l'utilisateur est admin
     if (authProvider.user?.isAdmin != true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,7 +64,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Tableau de Bord Admin',
@@ -96,7 +99,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   radius: 28,
                   backgroundColor: Colors.white,
                   child: Text(
-                    authProvider.user?.firstName.substring(0, 1).toUpperCase() ?? 'A',
+                    authProvider.user?.firstName
+                            .substring(0, 1)
+                            .toUpperCase() ??
+                        'A',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -128,7 +134,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(DateTime.now()),
+                        DateFormat(
+                          'EEEE dd MMMM yyyy',
+                          'fr_FR',
+                        ).format(DateTime.now()),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.9),
@@ -138,7 +147,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -155,7 +167,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ],
             ),
           ),
-          
+
           // Tabs
           Container(
             color: Colors.white,
@@ -171,7 +183,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ],
             ),
           ),
-          
+
           // Contenu des tabs - CORRECTION ICI
           Expanded(
             child: TabBarView(
@@ -179,10 +191,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               children: [
                 // Tab 1: Vue Globale - UTILISE LE PROVIDER EXISTANT
                 const _GlobalView(),
-                
+
                 // Tab 2: Aujourd'hui - UTILISE LE PROVIDER EXISTANT
                 const _TodayView(),
-                
+
                 // Tab 3: Statistiques
                 const _StatisticsView(),
               ],
@@ -190,13 +202,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ],
       ),
-      
+
       // Menu latéral
       drawer: _buildDrawer(context, authProvider),
     );
   }
-  
-  Widget _buildQuickAction(IconData icon, String label, Color color, VoidCallback onTap) {
+
+  Widget _buildQuickAction(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -215,18 +232,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w500, color: color),
             ),
           ],
         ),
       ),
     );
   }
-  
-  Widget _buildDailyStat(String title, String value, Color color, IconData icon) {
+
+  Widget _buildDailyStat(
+    String title,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     return Column(
       children: [
         Container(
@@ -246,26 +265,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             color: color,
           ),
         ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
-  
+
   Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-            ),
+            decoration: BoxDecoration(color: AppColors.primary),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -273,7 +284,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   radius: 30,
                   backgroundColor: Colors.white,
                   child: Text(
-                    authProvider.user?.firstName.substring(0, 1).toUpperCase() ?? 'A',
+                    authProvider.user?.firstName
+                            .substring(0, 1)
+                            .toUpperCase() ??
+                        'A',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -313,10 +327,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               'Gestion',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
             ),
           ),
           ListTile(
@@ -334,12 +345,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             },
           ),
           ListTile(
-            leading: const Icon(Icons.event, color: Colors.orange),
+            leading: const Icon(Icons.event),
             title: const Text('Examens'),
             onTap: () {
-              // Naviguer vers la gestion des examens
+              Navigator.pop(context); // Fermer drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ManageExamsPage(),
+                ),
+              );
             },
           ),
+
           ListTile(
             leading: const Icon(Icons.menu_book, color: Colors.blue),
             title: const Text('Cours'),
@@ -409,13 +427,13 @@ class _GlobalView extends StatelessWidget {
   Widget build(BuildContext context) {
     final dashboardProvider = context.watch<DashboardProvider>();
     final examProvider = context.watch<ExamProvider>();
-    
+
     if (dashboardProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     final stats = dashboardProvider.dashboardStats;
-    
+
     return RefreshIndicator(
       onRefresh: () => dashboardProvider.loadDashboardStats(),
       child: SingleChildScrollView(
@@ -461,9 +479,9 @@ class _GlobalView extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Examens en cours
             Card(
               elevation: 2,
@@ -500,7 +518,9 @@ class _GlobalView extends StatelessWidget {
                             ),
                           ),
                           title: Text(exam.name),
-                          subtitle: Text('${exam.formattedDate} à ${exam.startTime}'),
+                          subtitle: Text(
+                            '${exam.formattedDate} à ${exam.startTime}',
+                          ),
                           trailing: Text(
                             '${exam.presentCount ?? 0}/${exam.totalStudents}',
                             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -510,7 +530,7 @@ class _GlobalView extends StatelessWidget {
                           },
                         );
                       }).toList(),
-                    
+
                     if (examProvider.inProgressExams.length > 3)
                       Align(
                         alignment: Alignment.centerRight,
@@ -525,9 +545,9 @@ class _GlobalView extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Actions rapides
             Card(
               elevation: 2,
@@ -555,6 +575,12 @@ class _GlobalView extends StatelessWidget {
                           Colors.blue,
                           () {
                             // Créer un examen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreateExamPage(),
+                              ),
+                            );
                           },
                         ),
                         _buildQuickAction(
@@ -595,8 +621,14 @@ class _GlobalView extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildQuickAction(BuildContext context, IconData icon, String label, Color color, VoidCallback onTap) {
+
+  Widget _buildQuickAction(
+    BuildContext context,
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -615,10 +647,7 @@ class _GlobalView extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w500, color: color),
             ),
           ],
         ),
@@ -634,13 +663,13 @@ class _TodayView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dashboardProvider = context.watch<DashboardProvider>();
-    
+
     if (dashboardProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     final dailyStats = dashboardProvider.dailyStats;
-    
+
     return RefreshIndicator(
       onRefresh: () => dashboardProvider.loadDailyStats(),
       child: SingleChildScrollView(
@@ -657,7 +686,10 @@ class _TodayView extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(dashboardProvider.selectedDate),
+                        DateFormat(
+                          'EEEE dd MMMM yyyy',
+                          'fr_FR',
+                        ).format(dashboardProvider.selectedDate),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -670,8 +702,12 @@ class _TodayView extends StatelessWidget {
                         final selectedDate = await showDatePicker(
                           context: context,
                           initialDate: dashboardProvider.selectedDate,
-                          firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                          lastDate: DateTime.now().add(const Duration(days: 30)),
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 30),
+                          ),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 30),
+                          ),
                         );
                         if (selectedDate != null) {
                           dashboardProvider.setSelectedDate(selectedDate);
@@ -683,9 +719,9 @@ class _TodayView extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Totaux du jour
             if (dailyStats != null) ...[
               Card(
@@ -728,9 +764,9 @@ class _TodayView extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Liste des examens du jour
               Card(
                 child: Padding(
@@ -758,7 +794,7 @@ class _TodayView extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      
+
                       if (dailyStats.exams.isEmpty)
                         const Padding(
                           padding: EdgeInsets.all(16),
@@ -775,10 +811,15 @@ class _TodayView extends StatelessWidget {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: Colors.blue.withOpacity(0.1),
-                                child: const Icon(Icons.event, color: Colors.blue),
+                                child: const Icon(
+                                  Icons.event,
+                                  color: Colors.blue,
+                                ),
                               ),
                               title: Text(exam.examName),
-                              subtitle: Text('${exam.startTime} - ${exam.endTime}'),
+                              subtitle: Text(
+                                '${exam.startTime} - ${exam.endTime}',
+                              ),
                               trailing: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -815,8 +856,13 @@ class _TodayView extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildDailyStat(String title, String value, Color color, IconData icon) {
+
+  Widget _buildDailyStat(
+    String title,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     return Column(
       children: [
         Container(
@@ -836,13 +882,7 @@ class _TodayView extends StatelessWidget {
             color: color,
           ),
         ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
@@ -855,10 +895,7 @@ class _StatisticsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Text(
-        'Statistiques détaillées',
-        style: TextStyle(fontSize: 20),
-      ),
+      child: Text('Statistiques détaillées', style: TextStyle(fontSize: 20)),
     );
   }
 }
