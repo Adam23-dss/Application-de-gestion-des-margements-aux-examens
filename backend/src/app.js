@@ -113,6 +113,9 @@ app.use((req, res) => {
       'POST /api/auth/refresh',
       'GET  /api/auth/profile (protected)',
       'GET  /api/auth/test-auth (protected)',
+      'GET  /api/auth/test-admin (admin only)',
+      'POST /api/auth/change-password (protected)',
+      
       'GET  /api/students (protected)',
       'GET  /api/students/:id (protected)',
       'GET  /api/exams (protected)',

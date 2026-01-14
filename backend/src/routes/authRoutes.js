@@ -14,7 +14,48 @@ router.post(
   AuthMiddleware.validateRegister,
   AuthController.register
 );
-
+// Listes des utilisateurs (admin only)
+router.get(
+  '/users',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('admin'),
+  AuthController.listUsers
+);
+// Détails d'un utilisateur (admin only)
+router.get(
+  '/users/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('admin'),
+  AuthController.getUserById
+);
+// Mise à jour d'un utilisateur (admin only)    
+router.put(
+  '/users/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('admin'),
+  AuthController.updateProfile
+);
+// Suppression d'un utilisateur (admin only)
+router.delete(
+  '/users/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('admin'),
+  AuthController.deleteUser
+);
+// Touver les utilisateurs par rôle (admin only)
+router.get(
+  '/users/role/:role',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize('admin'),
+  AuthController.getUsersByRole
+);
+// Changement de mot de passe
+router.post(
+  '/change-password',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.validateChangePassword,
+  AuthController.changePassword
+);
 // Connexion
 router.post(
   '/login',

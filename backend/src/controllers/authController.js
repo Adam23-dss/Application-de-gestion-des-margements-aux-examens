@@ -154,6 +154,123 @@ class AuthController {
       next(error);
     }
   }
+  // Lister les utilisateurs par rôle (admin only)
+  static async getUsersByRole(req, res, next) {
+    try {
+      const { role } = req.params;
+      const users = await User.findByRole(role);
+      const formattedUsers = users.map(user => User.formatUserResponse(user));
+      
+      res.json({
+        success: true,
+        data: formattedUsers
+      });
+    } catch (error) {
+      console.error('Get users by role error:', error);
+      next(error);
+    }
+  }
+
+  // Supprimer un utilisateur (admin only)
+  static async deleteUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'Utilisateur non trouvé'
+        });
+      }
+      await User.delete(id);
+      res.json({
+        success: true,
+        message: 'Utilisateur supprimé avec succès'
+      });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      next(error);
+    }
+  }
+  // Lister tous les utilisateurs (admin only)
+  static async listUsers(req, res, next) {
+    try {
+      const users = await User.findAll();
+      const formattedUsers = users.map(user => User.formatUserResponse(user));
+      res.json({
+        success: true,
+        data: formattedUsers
+      });
+    } catch (error) {
+      console.error('List users error:', error);
+      next(error);
+    }
+  }
+  // Details utilisateur par ID
+  static async getUserById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'Utilisateur non trouvé'
+        });
+      }
+      const userResponse = User.formatUserResponse(user);
+      res.json({
+        success: true,
+        data: userResponse
+      });
+    } catch (error) {
+      console.error('Get user by ID error:', error);
+      next(error);
+    }
+  }
+  // Mettre à jour le profil utilisateur
+  static async updateProfile(req, res, next) {
+    try {
+      const { id } = req.user;
+      const updateData = req.body;
+      const user = await User.updateProfile(id, updateData);
+      const userResponse = User.formatUserResponse(user);
+      res.json({
+        success: true,
+        message: 'Profil mis à jour avec succès',
+        data: userResponse
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      next(error);
+    }
+  }
+  // Changer le mot de passe
+  static async changePassword(req, res, next) {
+    try {
+      const { id } = req.user;
+      const { currentPassword, newPassword } = req.body;
+      const user = await User.findById(id);
+      const isPasswordValid = await User.comparePassword(currentPassword, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({
+          success: false,
+          error: 'INVALID_PASSWORD',
+          message: 'Mot de passe actuel incorrect'
+        });
+      }
+      const hashedPassword = await User.hashPassword(newPassword);
+      await User.update(id, { password: hashedPassword });
+      res.json({
+        success: true,
+        message: 'Mot de passe mis à jour avec succès'
+      });
+    } catch (error) {
+      console.error('Change password error:', error);
+      next(error);
+    }
+  }
 }
 
 module.exports = AuthController;

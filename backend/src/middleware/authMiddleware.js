@@ -228,6 +228,32 @@ class AuthMiddleware {
     
     next();
   }
+  // Valider les données de changement de mot de passe
+  static validateChangePassword(req, res, next) {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Tous les champs sont requis'
+      });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Le nouveau mot de passe doit contenir au moins 6 caractères'
+      });
+    }
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Les nouveaux mots de passe ne correspondent pas'
+      });
+    }
+    next();
+  }
 }
 
 module.exports = AuthMiddleware;

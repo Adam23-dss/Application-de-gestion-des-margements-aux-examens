@@ -67,6 +67,77 @@ class User {
     }
   }
 
+  // Trouver des utilisateurs par rôle
+  static async findByRole(role) {
+    try {
+      const query = `
+        SELECT id, email, first_name, last_name, role, ufr, department, 
+               is_active, last_login, created_at, updated_at
+        FROM users 
+        WHERE role = $1 AND is_active = true
+      `;
+      
+      const result = await db.query(query, [role]);
+      return result.rows;
+      
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Supprimer un utilisateur (désactivation)
+  static async delete(id) {
+    try {
+      const query = `
+        UPDATE users 
+        SET is_active = false, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $1
+      `;
+      await db.query(query, [id]);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+  // Lister tous les utilisateurs actifs
+  static async findAll() {
+    try {
+      const query = `
+        SELECT id, email, first_name, last_name, role, ufr, department, 
+               is_active, last_login, created_at, updated_at
+        FROM users 
+        WHERE is_active = true
+      `;
+      
+      const result = await db.query(query);
+      return result.rows;
+      
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Mise à jour du profil utilisateur
+  static async updateProfile(id, updateData) {
+    const { first_name, last_name, ufr, department } = updateData;
+    try {
+      const query = `
+        UPDATE users
+        SET first_name = $1, last_name = $2, ufr = $3, department = $4, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+        RETURNING id, email, first_name, last_name, role, ufr, department, is_active, last_login, created_at, updated_at
+      `;
+      
+      const values = [first_name || null, last_name || null, ufr || null, department || null, id];
+      const result = await db.query(query, values);
+      
+      return result.rows[0];
+      
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Mettre à jour la dernière connexion
   static async updateLastLogin(userId) {
     try {
