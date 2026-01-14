@@ -61,26 +61,29 @@ class StatsController {
   }
 
   // GET /api/stats/exam/:id - Statistiques détaillées examen
-  static async getExamStats(req, res, next) {
-    try {
-      const examId = req.params.id;
-      
-      const stats = await Attendance.getStats(examId);
-      const exam = await Exam.findById(examId);
-      
-      res.json({
-        success: true,
-        data: {
-          ...stats,
-          examName: exam?.name,
-          examDate: exam?.exam_date
-        }
-      });
-      
-    } catch (error) {
-      next(error);
-    }
-  }
+  static async getExamStats(examId) {
+  const query = `
+    SELECT
+      COUNT(*) AS total,
+      COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present,
+      COUNT(CASE WHEN a.status = 'absent' THEN 1 END) AS absent,
+      COUNT(CASE WHEN a.status = 'late' THEN 1 END) AS late,
+      COUNT(CASE WHEN a.status = 'excused' THEN 1 END) AS excused,
+      ROUND(
+        COUNT(CASE WHEN a.status = 'present' THEN 1 END)::FLOAT /
+        NULLIF(COUNT(*), 0) * 100,
+        2
+      ) AS attendance_rate
+    FROM exam_registrations er
+    LEFT JOIN attendance a ON er.exam_id = a.exam_id
+      AND er.student_id = a.student_id
+    WHERE er.exam_id = $1
+  `;
+  
+  const result = await db.query(query, [examId]);
+  return result.rows[0];
+}
+
 
   // GET /api/stats/daily/:date? - Statistiques journalières
   static async getDailyStats(req, res, next) {
