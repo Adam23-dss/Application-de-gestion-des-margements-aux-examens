@@ -59,7 +59,7 @@ class Attendance {
         CONCAT(s.first_name, ' ', s.last_name) as student_name,
         s.student_code,
         s.email as student_email
-      FROM attendances a
+      FROM attendance a
       LEFT JOIN students s ON a.student_id = s.id
       WHERE a.exam_id = $1
       ORDER BY 
@@ -86,12 +86,12 @@ class Attendance {
       SELECT 
         COUNT(*) as total,
         COUNT(CASE WHEN status = 'present' THEN 1 END) AS present,
-        SUM(CASE WHEN a.status = 'absent' THEN 1 END) AS absent,
-        SUM(CASE WHEN a.status = 'late' THEN 1 END) AS late,
-        SUM(CASE WHEN a.status = 'excused' THEN 1 END) AS excused,
+        SUM(CASE WHEN status = 'absent' THEN 1 END) AS absent,
+        SUM(CASE WHEN status = 'late' THEN 1 END) AS late,
+        SUM(CASE WHEN status = 'excused' THEN 1 END) AS excused,
         ROUND(
-          COUNT(CASE WHEN status = 'present' THEN 1 END)::FLOAT / 
-          NULLIF(COUNT(*), 0) * 100, 2
+          (COUNT(CASE WHEN status = 'present' THEN 1 END)::numeric / 
+          NULLIF(COUNT(*), 0)::numeric) * 100, 2
         ) as attendance_rate
       FROM attendance 
       WHERE exam_id = $1
