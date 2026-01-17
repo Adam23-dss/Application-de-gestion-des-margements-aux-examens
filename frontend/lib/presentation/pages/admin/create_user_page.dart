@@ -21,6 +21,8 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _ufrController = TextEditingController();
+  final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -31,7 +33,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
   bool _isLoading = false;
   bool _isEditing = false;
 
-  final List<String> _roles = ['supervisor', 'admin', 'student'];
+  final List<String> _roles = [
+    'supervisor',
+    'admin',
+    // 'student' - selon ta structure, les étudiants ne sont pas créés ici
+  ];
 
   @override
   void initState() {
@@ -42,6 +48,8 @@ class _CreateUserPageState extends State<CreateUserPage> {
       _firstNameController.text = widget.userToEdit!.firstName;
       _lastNameController.text = widget.userToEdit!.lastName;
       _emailController.text = widget.userToEdit!.email;
+      _ufrController.text = widget.userToEdit!.ufr ?? '';
+      _departmentController.text = widget.userToEdit!.department ?? '';
       _selectedRole = widget.userToEdit!.role ?? 'supervisor';
       _isActive = widget.userToEdit!.isActive;
     }
@@ -52,6 +60,8 @@ class _CreateUserPageState extends State<CreateUserPage> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _ufrController.dispose();
+    _departmentController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -73,22 +83,13 @@ class _CreateUserPageState extends State<CreateUserPage> {
   Future<void> _saveUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validation du mot de passe si création
+    // Validation spécifique pour la création
     if (!_isEditing) {
+      // Validation du mot de passe pour la création
       if (_passwordController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Veuillez saisir un mot de passe'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      if (_passwordController.text != _confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Les mots de passe ne correspondent pas'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -104,6 +105,16 @@ class _CreateUserPageState extends State<CreateUserPage> {
         );
         return;
       }
+
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Les mots de passe ne correspondent pas'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -112,24 +123,26 @@ class _CreateUserPageState extends State<CreateUserPage> {
       final userProvider = context.read<UserProvider>();
       final authProvider = context.read<AuthProvider>();
 
+      // STRUCTURE EXACTE REQUISE PAR /auth/register
       final userData = {
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
-        'first_name': _firstNameController.text.trim(), // snake_case
-        'last_name': _lastNameController.text.trim(), // snake_case
+        'confirmPassword': _isEditing
+            ? _passwordController.text
+            : _confirmPasswordController.text, // REQUIS
+        'first_name': _firstNameController.text.trim(),
+        'last_name': _lastNameController.text.trim(),
         'role': _selectedRole,
-        'is_active': _isActive, // snake_case
+        'ufr': _ufrController.text.trim(),
+        'department': _departmentController.text.trim(),
+        // 'is_active' n'est pas dans la structure register, mais tu peux l'ajouter si ton backend le supporte
+        // 'is_active': _isActive,
       };
 
-
-      // Ajouter le mot de passe si création ou changement
-      if (!_isEditing) {
-        userData['password'] = _passwordController.text;
-      } else if (_passwordController.text.isNotEmpty) {
-        userData['password'] = _passwordController.text;
-      }
+      print('📤 Données envoyées: $userData');
 
       if (_isEditing) {
+        // Pour l'édition, on utilise probablement une autre route
         // Vérifier les permissions
         if (!authProvider.user!.isAdmin &&
             widget.userToEdit!.id != authProvider.user!.id) {
@@ -138,7 +151,21 @@ class _CreateUserPageState extends State<CreateUserPage> {
           );
         }
 
-        await userProvider.updateUser(widget.userToEdit!.id, userData);
+        // Pour l'édition, on envoie seulement les champs modifiables
+        final updateData = {
+          'first_name': _firstNameController.text.trim(),
+          'last_name': _lastNameController.text.trim(),
+          'ufr': _ufrController.text.trim(),
+          'department': _departmentController.text.trim(),
+          'role': _selectedRole,
+        };
+
+        // Si le mot de passe est modifié
+        if (_passwordController.text.isNotEmpty) {
+          updateData['password'] = _passwordController.text;
+        }
+
+        await userProvider.updateUser(widget.userToEdit!.id, updateData);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Utilisateur modifié avec succès'),
@@ -146,6 +173,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
           ),
         );
       } else {
+        // Pour la création, on utilise /auth/register
         await userProvider.createUser(userData);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -157,8 +185,12 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
       Navigator.pop(context);
     } catch (e) {
+      print('❌ Erreur création utilisateur: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -245,6 +277,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
                   prefixIcon: Icon(Icons.email),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                readOnly: _isEditing, // Email non modifiable en édition
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez saisir un email';
@@ -256,6 +289,38 @@ class _CreateUserPageState extends State<CreateUserPage> {
                   }
                   return null;
                 },
+              ),
+
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _ufrController,
+                      decoration: const InputDecoration(
+                        labelText: 'UFR',
+                        hintText: 'Ex: Sciences',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.school),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: TextFormField(
+                      controller: _departmentController,
+                      decoration: const InputDecoration(
+                        labelText: 'Département',
+                        hintText: 'Ex: Informatique',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.business),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
@@ -313,27 +378,29 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
               const SizedBox(height: 16),
 
-              // Statut actif/inactif
-              Row(
-                children: [
-                  Switch(
-                    value: _isActive,
-                    onChanged: (value) => setState(() => _isActive = value),
-                    activeColor: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isActive ? 'Utilisateur actif' : 'Utilisateur inactif',
-                    style: TextStyle(
-                      color: _isActive ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.w500,
+              // Statut actif/inactif (seulement en édition)
+              if (_isEditing) ...[
+                Row(
+                  children: [
+                    Switch(
+                      value: _isActive,
+                      onChanged: (value) => setState(() => _isActive = value),
+                      activeColor: AppColors.primary,
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isActive ? 'Utilisateur actif' : 'Utilisateur inactif',
+                      style: TextStyle(
+                        color: _isActive ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
 
               if (!_isEditing) ...[
-                const SizedBox(height: 8),
                 Row(
                   children: [
                     Checkbox(
@@ -387,29 +454,30 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
               const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: _isEditing
-                      ? 'Confirmer nouveau mot de passe'
-                      : 'Confirmer mot de passe *',
-                  hintText: 'Confirmer le mot de passe',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock_outline),
+              // Confirmation du mot de passe (requise pour /auth/register)
+              if (!_isEditing) ...[
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirmer le mot de passe *',
+                    hintText: 'Confirmer le mot de passe',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock_outline),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez confirmer le mot de passe';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Les mots de passe ne correspondent pas';
+                    }
+                    return null;
+                  },
                 ),
-                obscureText: true,
-                validator: !_isEditing
-                    ? (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez confirmer le mot de passe';
-                        }
-                        if (value != _passwordController.text) {
-                          return 'Les mots de passe ne correspondent pas';
-                        }
-                        return null;
-                      }
-                    : null,
-              ),
+
+                const SizedBox(height: 16),
+              ],
 
               const SizedBox(height: 32),
 
@@ -451,6 +519,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
                           if (_selectedRole == 'admin')
                             const Text(
                               'Les administrateurs ont accès à toutes les fonctionnalités',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          if (!_isEditing)
+                            const Text(
+                              'Le mot de passe doit être confirmé pour la création',
                               style: TextStyle(fontSize: 12),
                             ),
                         ],

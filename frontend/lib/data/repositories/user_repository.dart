@@ -17,10 +17,7 @@ class UserRepository {
     try {
       print('👥 Fetching users - Page: $page, Limit: $limit');
 
-      final Map<String, dynamic> params = {
-        'page': page,
-        'limit': limit,
-      };
+      final Map<String, dynamic> params = {'page': page, 'limit': limit};
 
       if (search != null && search.isNotEmpty) {
         params['search'] = search;
@@ -54,12 +51,7 @@ class UserRepository {
         }
       }
 
-      return {
-        'users': [],
-        'total': 0,
-        'page': 1,
-        'totalPages': 1,
-      };
+      return {'users': [], 'total': 0, 'page': 1, 'totalPages': 1};
     } on DioException catch (e) {
       print('❌ Error fetching users: ${e.message}');
       throw Exception('Erreur lors de la récupération des utilisateurs');
@@ -89,30 +81,75 @@ class UserRepository {
   // Créer un nouvel utilisateur
   Future<UserModel> createUser(Map<String, dynamic> userData) async {
     try {
-      print('➕ Creating user with data: $userData');
+      print('➕ Création user avec data: $userData');
 
+      // VÉRIFIER LES CHAMPS REQUIS POUR /auth/register
+      final requiredFields = [
+        'email',
+        'password',
+        'confirmPassword',
+        'first_name',
+        'last_name',
+      ];
+
+      final missingFields = requiredFields
+          .where(
+            (field) =>
+                userData[field] == null || userData[field].toString().isEmpty,
+          )
+          .toList();
+
+      if (missingFields.isNotEmpty) {
+        throw Exception('Champs manquants: ${missingFields.join(', ')}');
+      }
+
+      // Route publique /auth/register - PAS besoin de token
       final response = await _dio.post(
-        ApiEndpoints.createUser,
+        '/auth/register',
         data: userData,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            // PAS d'Authorization header - route publique
+          },
+        ),
       );
+
+      print('📥 Réponse création - Status: ${response.statusCode}');
+      print('📋 Réponse création: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
 
         if (responseData['success'] == true) {
-          return UserModel.fromJson(responseData['data']);
+          // La structure peut varier - adapter selon la réponse
+          if (responseData.containsKey('data')) {
+            if (responseData['data'] is Map &&
+                responseData['data'].containsKey('user')) {
+              return UserModel.fromJson(responseData['data']['user']);
+            }
+            return UserModel.fromJson(responseData['data']);
+          } else if (responseData.containsKey('user')) {
+            return UserModel.fromJson(responseData['user']);
+          }
+          return UserModel.fromJson(responseData);
         } else {
-          throw Exception(responseData['message'] ?? 'Erreur inconnue');
+          final errorMsg = responseData['message'] ?? 'Erreur de création';
+          print('❌ Échec création: $errorMsg');
+          throw Exception(errorMsg);
         }
       }
 
-      throw Exception('Échec de la création de l\'utilisateur');
+      throw Exception('Statut HTTP non valide: ${response.statusCode}');
     } on DioException catch (e) {
-      print('❌ Error creating user: ${e.message}');
-      
+      print('❌ Dio error creating user: ${e.message}');
+      print('📡 Response: ${e.response?.data}');
+      print('🔗 URL: ${e.requestOptions.uri}');
+
+      // Gestion des erreurs spécifiques
       if (e.response != null) {
         final errorData = e.response!.data;
-        if (errorData is Map && errorData['error'] != null) {
+        if (errorData is Map) {
           final errorCode = errorData['error'];
           final message = errorData['message'] ?? 'Erreur de création';
 
@@ -120,14 +157,19 @@ class UserRepository {
             case 'EMAIL_EXISTS':
               throw Exception('Cet email est déjà utilisé');
             case 'VALIDATION_ERROR':
-              throw Exception(message);
+              throw Exception('Données invalides: $message');
+            case 'MISSING_REQUIRED_FIELDS':
+              throw Exception('Champs manquants: $message');
             default:
               throw Exception(message);
           }
         }
       }
-      
+
       throw Exception('Erreur réseau: ${e.message}');
+    } catch (e) {
+      print('❌ Unexpected error creating user: $e');
+      rethrow;
     }
   }
 
