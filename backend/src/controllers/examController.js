@@ -9,16 +9,16 @@ class ExamController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
-      
+
       const filters = {
         status: req.query.status,
         course_id: req.query.course_id,
         start_date: req.query.start_date,
         end_date: req.query.end_date
       };
-      
+
       const result = await Exam.findAll(page, limit, filters);
-      
+
       res.json({
         success: true,
         data: result.exams,
@@ -33,7 +33,7 @@ class ExamController {
   static async getById(req, res, next) {
     try {
       const exam = await Exam.findById(req.params.id);
-      
+
       if (!exam) {
         return res.status(404).json({
           success: false,
@@ -41,7 +41,7 @@ class ExamController {
           message: 'Examen non trouvé'
         });
       }
-      
+
       res.json({
         success: true,
         data: exam
@@ -54,9 +54,17 @@ class ExamController {
   // POST /api/exams - Créer examen
   static async create(req, res, next) {
     try {
-      const { course_id, name, description, exam_date, start_time, end_time, 
-              room_id, supervisor_id } = req.body;
-      
+      const {
+        course_id,
+        name,
+        description,
+        exam_date,
+        start_time,
+        end_time,
+        room_id,
+        supervisor_id
+      } = req.body;
+
       // Validation basique
       if (!name || !exam_date || !start_time || !end_time) {
         return res.status(400).json({
@@ -65,7 +73,7 @@ class ExamController {
           message: 'Nom, date, heure de début et fin sont requis'
         });
       }
-      
+
       const examData = {
         course_id,
         name,
@@ -76,9 +84,9 @@ class ExamController {
         room_id,
         supervisor_id: supervisor_id || req.user.id // Utiliser l'ID de l'utilisateur connecté
       };
-      
+
       const exam = await Exam.create(examData);
-      
+
       res.status(201).json({
         success: true,
         message: 'Examen créé avec succès',
@@ -100,7 +108,7 @@ class ExamController {
   static async update(req, res, next) {
     try {
       const exam = await Exam.update(req.params.id, req.body);
-      
+
       if (!exam) {
         return res.status(404).json({
           success: false,
@@ -108,7 +116,7 @@ class ExamController {
           message: 'Examen non trouvé'
         });
       }
-      
+
       res.json({
         success: true,
         message: 'Examen mis à jour avec succès',
@@ -123,7 +131,7 @@ class ExamController {
   static async delete(req, res, next) {
     try {
       const exam = await Exam.delete(req.params.id);
-      
+
       if (!exam) {
         return res.status(404).json({
           success: false,
@@ -131,11 +139,14 @@ class ExamController {
           message: 'Examen non trouvé'
         });
       }
-      
+
       res.json({
         success: true,
         message: 'Examen annulé avec succès',
-        data: { id: exam.id, name: exam.name }
+        data: {
+          id: exam.id,
+          name: exam.name
+        }
       });
     } catch (error) {
       next(error);
@@ -146,7 +157,7 @@ class ExamController {
   static async start(req, res, next) {
     try {
       const exam = await Exam.updateStatus(req.params.id, 'in_progress');
-      
+
       if (!exam) {
         return res.status(404).json({
           success: false,
@@ -154,7 +165,7 @@ class ExamController {
           message: 'Examen non trouvé'
         });
       }
-      
+
       res.json({
         success: true,
         message: 'Examen démarré',
@@ -169,7 +180,7 @@ class ExamController {
   static async end(req, res, next) {
     try {
       const exam = await Exam.updateStatus(req.params.id, 'completed');
-      
+
       if (!exam) {
         return res.status(404).json({
           success: false,
@@ -177,7 +188,7 @@ class ExamController {
           message: 'Examen non trouvé'
         });
       }
-      
+
       res.json({
         success: true,
         message: 'Examen terminé',
@@ -192,7 +203,7 @@ class ExamController {
   static async getStudents(req, res, next) {
     try {
       const students = await Exam.getStudents(req.params.id);
-      
+
       res.json({
         success: true,
         data: students
@@ -205,8 +216,10 @@ class ExamController {
   // POST /api/exams/:id/students - Ajouter étudiant
   static async addStudent(req, res, next) {
     try {
-      const { student_id } = req.body;
-      
+      const {
+        student_id
+      } = req.body;
+
       if (!student_id) {
         return res.status(400).json({
           success: false,
@@ -214,9 +227,9 @@ class ExamController {
           message: 'ID étudiant requis'
         });
       }
-      
+
       const result = await Exam.addStudent(req.params.id, student_id);
-      
+
       res.status(201).json({
         success: true,
         message: 'Étudiant ajouté à l\'examen',
@@ -231,7 +244,7 @@ class ExamController {
   static async removeStudent(req, res, next) {
     try {
       const result = await Exam.removeStudent(req.params.id, req.params.studentId);
-      
+
       if (!result) {
         return res.status(404).json({
           success: false,
@@ -239,11 +252,13 @@ class ExamController {
           message: 'Inscription non trouvée'
         });
       }
-      
+
       res.json({
         success: true,
         message: 'Étudiant retiré de l\'examen',
-        data: { id: result.id }
+        data: {
+          id: result.id
+        }
       });
     } catch (error) {
       next(error);
@@ -253,14 +268,28 @@ class ExamController {
   // GET /api/exams/:id/statistics - Statistiques
   static async getStatistics(req, res, next) {
     try {
-      const statistics = await Exam.getStatistics(req.params.id);
-      
-      res.json({
+      const stats = await Exam.getStatistics(req.params.id);
+
+      if (!stats || stats.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "NO_DATA",
+          message: "Aucune statistique disponible"
+        });
+      }
+
+      return res.json({
         success: true,
-        data: statistics
+        data: stats[0]
       });
+
     } catch (error) {
-      next(error);
+      console.error("Statistics Error:", error.message);
+      return res.status(500).json({
+        success: false,
+        error: "INTERNAL_SERVER_ERROR",
+        message: error.message
+      });
     }
   }
 }
