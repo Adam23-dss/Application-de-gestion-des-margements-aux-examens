@@ -85,10 +85,10 @@ class Attendance {
     const query = `
       SELECT 
         COUNT(*) as total,
-        COUNT(CASE WHEN status = 'present' THEN 1 ELSE 0 END) AS present,
-        SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) AS absent,
-        SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) AS late,
-        SUM(CASE WHEN a.status = 'excused' THEN 1 ELSE 0 END) AS excused,
+        COUNT(CASE WHEN status = 'present' THEN 1 END) AS present,
+        SUM(CASE WHEN a.status = 'absent' THEN 1 END) AS absent,
+        SUM(CASE WHEN a.status = 'late' THEN 1 END) AS late,
+        SUM(CASE WHEN a.status = 'excused' THEN 1 END) AS excused,
         ROUND(
           COUNT(CASE WHEN status = 'present' THEN 1 END)::FLOAT / 
           NULLIF(COUNT(*), 0) * 100, 2

@@ -298,7 +298,7 @@ class Exam {
     `;
     
     const result = await db.query(query, [examId]);
-    return result.rows[0];
+    return result.rows;
   }
 }
 
