@@ -123,7 +123,7 @@ class AuthRepository {
         final userData = jsonDecode(userJson);
         
         // Créer l'utilisateur avec le token récupéré
-        final user = UserModel.fromStorage(userData).copyWith(
+        final user = UserModel.fromJson(userData).copyWith(
           accessToken: token,
         );
         

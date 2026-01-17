@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend1/presentation/pages/admin/create_exam_page.dart';
+import 'package:frontend1/presentation/pages/admin/create_user_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_exams_page.dart';
+import 'package:frontend1/presentation/pages/admin/manage_users_page.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
 import 'package:provider/provider.dart';
@@ -335,6 +337,12 @@ class _AdminDashboardState extends State<AdminDashboard>
             title: const Text('Utilisateurs'),
             onTap: () {
               // Naviguer vers la gestion des utilisateurs
+              Navigator.pop(context); // Fermer drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManageUsersPage(),
+                )
+                );
             },
           ),
           ListTile(
@@ -342,6 +350,7 @@ class _AdminDashboardState extends State<AdminDashboard>
             title: const Text('Étudiants'),
             onTap: () {
               // Naviguer vers la gestion des étudiants
+              
             },
           ),
           ListTile(
@@ -590,6 +599,12 @@ class _GlobalView extends StatelessWidget {
                           Colors.green,
                           () {
                             // Ajouter un utilisateur
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreateUserPage(),
+                              ),
+                            );
                           },
                         ),
                         _buildQuickAction(

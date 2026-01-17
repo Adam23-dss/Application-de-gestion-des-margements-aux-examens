@@ -44,7 +44,7 @@ class AuthProvider with ChangeNotifier {
         final userJson = await _storage.read(key: 'user');
         if (userJson != null) {
           final userData = jsonDecode(userJson);
-          _user = UserModel.fromStorage(userData);
+          _user = UserModel.fromJson(userData);
           print('✅ Loaded stored user: ${_user!.fullName}');
         } else {
           print('⚠️ No user data found, only token exists');

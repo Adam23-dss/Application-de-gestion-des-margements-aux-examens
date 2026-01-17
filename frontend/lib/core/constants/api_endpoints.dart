@@ -8,6 +8,15 @@ class ApiEndpoints {
   static const String logout = '$baseUrl/auth/logout';
   static const String profile = '$baseUrl/auth/profile';
   static const String testAuth = '$baseUrl/auth/test-auth';
+
+  // Users
+  static const String users = '$baseUrl/auth/users';
+  static String userDetails(int id) => '$users/$id';
+  static String userRole(String role) => '$users/role/$role';
+  static const String createUser = '$baseUrl/auth/register';
+  static String updateUser(int id) => '$users/$id';
+  static String deleteUser(int id) => '$users/$id/delete';
+  static String changePassword(int id) => '$users/$id/change-password';
   
   // Exams
   static const String exams = '$baseUrl/exams';

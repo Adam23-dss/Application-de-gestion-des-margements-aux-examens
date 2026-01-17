@@ -54,4 +54,5 @@ class StudentModel {
   String get formattedInfo {
     return '$studentCode - $fullName ($department)';
   }
+  
 }
