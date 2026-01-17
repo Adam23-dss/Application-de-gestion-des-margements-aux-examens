@@ -4,7 +4,7 @@ class Exam {
   // Récupérer tous les examens
   static async findAll(page = 1, limit = 20, filters = {}) {
     const offset = (page - 1) * limit;
-    
+
     let query = `
       SELECT e.id, e.name, e.description, e.exam_date, e.start_time, e.end_time,
              e.status, e.total_students, e.created_at,
@@ -17,17 +17,17 @@ class Exam {
       LEFT JOIN users u ON e.supervisor_id = u.id
       WHERE 1=1
     `;
-    
+
     let countQuery = `
       SELECT COUNT(*) 
       FROM exams e
       WHERE 1=1
     `;
-    
+
     const values = [];
     const countValues = [];
     let paramCount = 0;
-    
+
     // Ajouter les filtres
     if (filters.status) {
       paramCount++;
@@ -36,7 +36,7 @@ class Exam {
       query += ` AND e.status = $${paramCount}`;
       countQuery += ` AND e.status = $${paramCount}`;
     }
-    
+
     if (filters.course_id) {
       paramCount++;
       values.push(filters.course_id);
@@ -44,7 +44,7 @@ class Exam {
       query += ` AND e.course_id = $${paramCount}`;
       countQuery += ` AND e.course_id = $${paramCount}`;
     }
-    
+
     if (filters.start_date) {
       paramCount++;
       values.push(filters.start_date);
@@ -52,7 +52,7 @@ class Exam {
       query += ` AND e.exam_date >= $${paramCount}`;
       countQuery += ` AND e.exam_date >= $${paramCount}`;
     }
-    
+
     if (filters.end_date) {
       paramCount++;
       values.push(filters.end_date);
@@ -60,17 +60,17 @@ class Exam {
       query += ` AND e.exam_date <= $${paramCount}`;
       countQuery += ` AND e.exam_date <= $${paramCount}`;
     }
-    
+
     // Ajouter pagination et tri
     query += ` ORDER BY e.exam_date DESC, e.start_time DESC 
                LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
     values.push(limit, offset);
-    
+
     const [examsResult, countResult] = await Promise.all([
       db.query(query, values),
       db.query(countQuery, countValues)
     ]);
-    
+
     return {
       exams: examsResult.rows,
       pagination: {
@@ -96,26 +96,35 @@ class Exam {
       LEFT JOIN users u ON e.supervisor_id = u.id
       WHERE e.id = $1
     `;
-    
+
     const result = await db.query(query, [id]);
     return result.rows[0];
   }
 
   // Créer un nouvel examen
   static async create(examData) {
-    const { course_id, name, description, exam_date, start_time, end_time, 
-            room_id, supervisor_id } = examData;
-    
+    const {
+      course_id,
+      name,
+      description,
+      exam_date,
+      start_time,
+      end_time,
+      room_id,
+      supervisor_id
+    } = examData;
+
     const query = `
       INSERT INTO exams (course_id, name, description, exam_date, start_time, 
                         end_time, room_id, supervisor_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id, name, exam_date, start_time, end_time, status, created_at
     `;
-    
-    const values = [course_id, name, description, exam_date, start_time, 
-                   end_time, room_id, supervisor_id];
-    
+
+    const values = [course_id, name, description, exam_date, start_time,
+      end_time, room_id, supervisor_id
+    ];
+
     try {
       const result = await db.query(query, values);
       return result.rows[0];
@@ -138,7 +147,7 @@ class Exam {
     const fields = [];
     const values = [];
     let paramCount = 0;
-    
+
     // Construire dynamiquement la requête
     for (const [key, value] of Object.entries(examData)) {
       if (value !== undefined) {
@@ -147,25 +156,25 @@ class Exam {
         values.push(value);
       }
     }
-    
+
     if (fields.length === 0) {
       throw new Error('Aucune donnée à mettre à jour');
     }
-    
+
     // Ajouter updated_at
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
-    
+
     // Ajouter l'ID
     paramCount++;
     values.push(id);
-    
+
     const query = `
       UPDATE exams 
       SET ${fields.join(', ')}
       WHERE id = $${paramCount}
       RETURNING id, name, exam_date, status, updated_at
     `;
-    
+
     const result = await db.query(query, values);
     return result.rows[0];
   }
@@ -178,7 +187,7 @@ class Exam {
       WHERE id = $1
       RETURNING id, name
     `;
-    
+
     const result = await db.query(query, [id]);
     return result.rows[0];
   }
@@ -191,7 +200,7 @@ class Exam {
       WHERE id = $2
       RETURNING id, name, status
     `;
-    
+
     const result = await db.query(query, [status, id]);
     return result.rows[0];
   }
@@ -208,7 +217,7 @@ class Exam {
       WHERE er.exam_id = $1 AND s.is_active = true
       ORDER BY s.last_name, s.first_name
     `;
-    
+
     const result = await db.query(query, [examId]);
     return result.rows;
   }
@@ -221,7 +230,7 @@ class Exam {
       ON CONFLICT (exam_id, student_id) DO NOTHING
       RETURNING id, registration_date
     `;
-    
+
     // Mettre à jour le compteur total_students
     const updateCountQuery = `
       UPDATE exams 
@@ -232,13 +241,13 @@ class Exam {
       )
       WHERE id = $1
     `;
-    
+
     try {
       await db.query('BEGIN');
-      
+
       const result = await db.query(query, [examId, studentId]);
       await db.query(updateCountQuery, [examId]);
-      
+
       await db.query('COMMIT');
       return result.rows[0];
     } catch (error) {
@@ -254,7 +263,7 @@ class Exam {
       WHERE exam_id = $1 AND student_id = $2
       RETURNING id
     `;
-    
+
     const updateCountQuery = `
       UPDATE exams 
       SET total_students = (
@@ -264,13 +273,13 @@ class Exam {
       )
       WHERE id = $1
     `;
-    
+
     try {
       await db.query('BEGIN');
-      
+
       const result = await db.query(query, [examId, studentId]);
       await db.query(updateCountQuery, [examId]);
-      
+
       await db.query('COMMIT');
       return result.rows[0];
     } catch (error) {
@@ -282,21 +291,21 @@ class Exam {
   // Statistiques d'un examen
   static async getStatistics(examId) {
     const query = `
-      SELECT 
-        COUNT(*) as total_students,
-        COUNT(CASE WHEN a.status = 'present' THEN 1 END) as present_count,
-        COUNT(CASE WHEN a.status = 'absent' THEN 1 END) as absent_count,
-        COUNT(CASE WHEN a.status = 'late' THEN 1 END) as late_count,
-        COUNT(CASE WHEN a.status = 'excused' THEN 1 END) as excused_count,
-        ROUND(
-          COUNT(CASE WHEN a.status = 'present' THEN 1 END)::FLOAT / 
-          NULLIF(COUNT(*), 0) * 100, 2
-        ) as attendance_rate
-      FROM exam_registrations er
-      LEFT JOIN attendance a ON a.exam_id = er.exam_id AND a.student_id = er.student_id
-      WHERE er.exam_id = $1
-    `;
-    
+    SELECT 
+      COUNT(*) as total_students,
+      COUNT(CASE WHEN a.status = 'present' THEN 1 END) as present_count,
+      COUNT(CASE WHEN a.status = 'absent' THEN 1 END) as absent_count,
+      COUNT(CASE WHEN a.status = 'late' THEN 1 END) as late_count,
+      COUNT(CASE WHEN a.status = 'excused' THEN 1 END) as excused_count,
+      ROUND(
+        (COUNT(CASE WHEN a.status = 'present' THEN 1 END)::numeric /
+         NULLIF(COUNT(*), 0)::numeric) * 100, 2
+      ) as attendance_rate
+    FROM exam_registrations er
+    LEFT JOIN attendance a ON a.exam_id = er.exam_id AND a.student_id = er.student_id
+    WHERE er.exam_id = $1
+  `;
+
     const result = await db.query(query, [examId]);
     return result.rows;
   }
