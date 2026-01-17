@@ -72,7 +72,7 @@ class Attendance {
         a.validation_time DESC
     `;
 
-      const result = await pool.query(query, [examId]);
+      const result = await db.query(query, [examId]);
       return result.rows;
     } catch (error) {
       console.error("Error in findByExam:", error);
