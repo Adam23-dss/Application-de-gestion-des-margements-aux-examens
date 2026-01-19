@@ -236,7 +236,6 @@ class StudentController {
       next(error);
     }
   }
-
   // GET /api/students/filters/options - Options de filtres
   static async getFilterOptions(req, res, next) {
     try {

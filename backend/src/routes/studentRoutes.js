@@ -83,4 +83,11 @@ router.delete('/:id',
   studentController.delete
 );
 
+router.get('/stats/ufr',
+  authMiddleware.authorize('supervisor', 'admin'),
+  studentController.getStatsByUFR
+);;
+
+
+
 module.exports = router;
