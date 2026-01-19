@@ -85,7 +85,7 @@ router.delete('/:id',
 
 router.get('/stats/ufr',
   authMiddleware.authorize('supervisor', 'admin'),
-  studentController.getStatsByUFR
+  studentController.getUfrStats
 );;
 
 
