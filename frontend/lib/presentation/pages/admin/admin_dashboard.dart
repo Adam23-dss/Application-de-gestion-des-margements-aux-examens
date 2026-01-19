@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend1/presentation/pages/admin/create_exam_page.dart';
 import 'package:frontend1/presentation/pages/admin/create_user_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_exams_page.dart';
+import 'package:frontend1/presentation/pages/admin/manage_students_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_users_page.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
@@ -350,7 +351,12 @@ class _AdminDashboardState extends State<AdminDashboard>
             title: const Text('Étudiants'),
             onTap: () {
               // Naviguer vers la gestion des étudiants
-              
+              Navigator.pop(context); // Fermer drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManageStudentsPage(),
+                )
+                );
             },
           ),
           ListTile(
