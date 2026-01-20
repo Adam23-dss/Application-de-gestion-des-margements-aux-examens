@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend1/presentation/providers/export_provider.dart';
+import 'package:frontend1/presentation/providers/room_provider.dart';
 import 'package:frontend1/presentation/providers/user_provider.dart';
 import 'package:intl/date_symbol_data_local.dart'; // Ajoute cette importation
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/pages/admin/admin_dashboard.dart';
-import 'package:frontend1/presentation/pages/admin/courses_page.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/providers/exam_provider.dart';
 import 'package:frontend1/presentation/providers/student_provider.dart';
@@ -46,6 +47,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => CourseProvider()),
+        ChangeNotifierProvider(create: (_) => RoomProvider()),
+        ChangeNotifierProvider(create: (_) => ExportProvider()),
       ],
       child: MaterialApp(
         title: 'Système de Gestion des Émargements',

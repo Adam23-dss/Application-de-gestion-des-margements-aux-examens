@@ -4,24 +4,31 @@ import 'package:frontend1/data/repositories/course_repository.dart';
 
 class CourseProvider with ChangeNotifier {
   List<CourseModel> _courses = [];
+  CourseModel? _selectedCourse;
   bool _isLoading = false;
   bool _isLoadingMore = false;
+  bool _isLoadingFilters = false;
   String? _error;
   int _currentPage = 1;
   int _totalPages = 1;
   bool _hasMore = true;
-  
+
   // Filtres
   String? _selectedUfr;
   String? _selectedDepartment;
   List<String> _ufrOptions = [];
   List<String> _departmentOptions = [];
   bool _isSearching = false;
-  
+
+  // statistiques
+  Map<String, dynamic> _ufrStats = {};
+
   // Getters
   List<CourseModel> get courses => _courses;
+  CourseModel? get selectedCourse => _selectedCourse;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
+  bool get isLoadingFilters => _isLoadingFilters;
   String? get error => _error;
   bool get hasMore => _hasMore;
   String? get selectedUfr => _selectedUfr;
@@ -29,46 +36,49 @@ class CourseProvider with ChangeNotifier {
   List<String> get ufrOptions => _ufrOptions;
   List<String> get departmentOptions => _departmentOptions;
   bool get isSearching => _isSearching;
-  
+  Map<String, dynamic> get ufrStats => _ufrStats;
+
   final CourseRepository _repository = CourseRepository();
-  
+
+  // Charger les cours
   Future<void> loadCourses({bool reset = true}) async {
     if (reset) {
       _currentPage = 1;
       _courses.clear();
       _hasMore = true;
     }
-    
+
     _isLoading = true;
     _error = null;
     _isSearching = false;
     notifyListeners();
-    
+
     try {
       final filters = {
         if (_selectedUfr != null) 'ufr': _selectedUfr,
         if (_selectedDepartment != null) 'department': _selectedDepartment,
       };
-      
+
       final response = await _repository.getCourses(
         page: _currentPage,
         limit: 20,
         filters: filters,
       );
-      
+
       if (reset) {
         _courses = response.courses;
       } else {
         _courses.addAll(response.courses);
       }
-      
+
       _currentPage = response.pagination.currentPage;
       _totalPages = response.pagination.totalPages;
-      _hasMore = response.pagination.currentPage < response.pagination.totalPages;
-      
+      _hasMore =
+          response.pagination.currentPage < response.pagination.totalPages;
+
       // Mettre à jour les options de filtres
-      await _loadFilterOptions();
-      
+      // await _loadFilterOptions();
+
       _error = null;
     } catch (e) {
       _error = e.toString();
@@ -77,13 +87,14 @@ class CourseProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
+  // Charger plus de cours
   Future<void> loadMoreCourses() async {
     if (_isLoadingMore || !_hasMore) return;
-    
+
     _isLoadingMore = true;
     notifyListeners();
-    
+
     try {
       _currentPage++;
       await loadCourses(reset: false);
@@ -92,17 +103,18 @@ class CourseProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
+  // Rechercher des cours
   Future<void> searchCourses(String query) async {
     if (query.isEmpty) {
       await loadCourses();
       return;
     }
-    
+
     _isSearching = true;
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       final results = await _repository.searchCourses(query);
       _courses = results;
@@ -116,96 +128,142 @@ class CourseProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
-  Future<void> createCourse({
-    required String code,
-    required String name,
-    required String ufr,
-    required String department,
-    int? credits,
-    String? description,
-  }) async {
+
+  // CRÉER UN COURS
+  Future<CourseModel> createCourse(Map<String, dynamic> courseData) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
     try {
-      // Ici, tu devrais appeler l'API pour créer le cours
-      // Pour l'instant, simuler la création
-      final newCourse = CourseModel(
-        id: DateTime.now().millisecondsSinceEpoch,
-        code: code,
-        name: name,
-        ufr: ufr,
-        department: department,
-        credits: credits,
-        description: description,
-      );
+      final newCourse = await _repository.createCourse(courseData);
       
       _courses.insert(0, newCourse);
-      notifyListeners();
+      _error = null;
       
-      // Charger les options de filtres mises à jour
-      await _loadFilterOptions();
+      // Recharger les options de filtres
+      await loadFilterOptions();
+      
+      notifyListeners();
+      return newCourse;
     } catch (e) {
-      throw Exception('Erreur lors de la création: ${e.toString()}');
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
-  
-  Future<void> updateCourse({
-    required int courseId,
-    required String name,
-    required String ufr,
-    required String department,
-    int? credits,
-    String? description,
-  }) async {
+
+  // METTRE À JOUR UN COURS
+  Future<CourseModel> updateCourse(int id, Map<String, dynamic> courseData) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
     try {
-      final index = _courses.indexWhere((course) => course.id == courseId);
+      final updatedCourse = await _repository.updateCourse(id, courseData);
+      
+      // Mettre à jour dans la liste
+      final index = _courses.indexWhere((course) => course.id == id);
       if (index != -1) {
-        final updatedCourse = CourseModel(
-          id: courseId,
-          code: _courses[index].code,
-          name: name,
-          ufr: ufr,
-          department: department,
-          credits: credits,
-          description: description,
-        );
-        
         _courses[index] = updatedCourse;
-        notifyListeners();
-        
-        // Charger les options de filtres mises à jour
-        await _loadFilterOptions();
       }
-    } catch (e) {
-      throw Exception('Erreur lors de la mise à jour: ${e.toString()}');
-    }
-  }
-  
-  Future<void> deleteCourse(int courseId) async {
-    try {
-      _courses.removeWhere((course) => course.id == courseId);
+      
+      // Mettre à jour le cours sélectionné
+      if (_selectedCourse?.id == id) {
+        _selectedCourse = updatedCourse;
+      }
+      
+      _error = null;
       notifyListeners();
-      
-      // Charger les options de filtres mises à jour
-      await _loadFilterOptions();
+      return updatedCourse;
     } catch (e) {
-      throw Exception('Erreur lors de la suppression: ${e.toString()}');
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
-  
-  Future<void> _loadFilterOptions() async {
+
+  // SUPPRIMER UN COURS
+  Future<void> deleteCourse(int id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
     try {
-      // Simuler le chargement des options de filtres
-      // En réalité, tu devrais appeler l'API
-      final allUfrs = _courses.map((c) => c.ufr).whereType<String>().toSet().toList();
-      final allDepartments = _courses.map((c) => c.department).whereType<String>().toSet().toList();
+      await _repository.deleteCourse(id);
       
-      _ufrOptions = allUfrs;
-      _departmentOptions = allDepartments;
+      // Retirer de la liste
+      _courses.removeWhere((course) => course.id == id);
+      
+      // Désélectionner si c'était le cours sélectionné
+      if (_selectedCourse?.id == id) {
+        _selectedCourse = null;
+      }
+      
+      // Recharger les options de filtres
+      await loadFilterOptions();
+      
+      _error = null;
     } catch (e) {
-      // Ignorer les erreurs de chargement des filtres
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // OBTENIR UN COURS PAR ID
+  Future<CourseModel?> getCourseById(int courseId) async {
+    try {
+      return await _repository.getCourseById(courseId);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
     }
   }
   
+  // CHARGER LES OPTIONS DE FILTRES
+  Future<void> loadFilterOptions() async {
+    _isLoadingFilters = true;
+    notifyListeners();
+    
+    try {
+      final options = await _repository.getFilterOptions();
+      _ufrOptions = options['ufr'] ?? [];
+      _departmentOptions = options['departments'] ?? [];
+    } catch (e) {
+      print('❌ Error loading filter options: $e');
+    } finally {
+      _isLoadingFilters = false;
+      notifyListeners();
+    }
+  }
+  
+  // CHARGER LES STATISTIQUES
+  Future<void> loadUfrStats() async {
+    try {
+      _ufrStats = await _repository.getUfrStats();
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error loading UFR stats: $e');
+    }
+  }
+  
+  // SÉLECTIONNER UN COURS
+  void selectCourse(CourseModel? course) {
+    _selectedCourse = course;
+    notifyListeners();
+  }
+  
+  // DÉFINIR LES FILTRES
   void setUfrFilter(String? ufr) {
     _selectedUfr = ufr;
     loadCourses();
@@ -215,15 +273,37 @@ class CourseProvider with ChangeNotifier {
     _selectedDepartment = department;
     loadCourses();
   }
-  
+
+   // EFFACER LES FILTRES
   void clearFilters() {
     _selectedUfr = null;
     _selectedDepartment = null;
     loadCourses();
   }
   
+  // EFFACER LES ERREURS
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+  
+  // RÉINITIALISER
+  void reset() {
+    _courses.clear();
+    _selectedCourse = null;
+    _isLoading = false;
+    _isLoadingMore = false;
+    _isLoadingFilters = false;
+    _error = null;
+    _currentPage = 1;
+    _totalPages = 1;
+    _hasMore = true;
+    _selectedUfr = null;
+    _selectedDepartment = null;
+    _ufrOptions.clear();
+    _departmentOptions.clear();
+    _isSearching = false;
+    _ufrStats.clear();
     notifyListeners();
   }
 }

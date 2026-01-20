@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend1/data/models/exam_model.dart';
 import 'package:frontend1/presentation/pages/attendance/qr_scanner_page.dart';
+import 'package:frontend1/presentation/widgets/export_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/exam_provider.dart';
 import 'package:frontend1/presentation/providers/attendance_provider.dart';
@@ -33,6 +34,17 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
     final attendanceProvider = context.read<AttendanceProvider>();
     await attendanceProvider.loadExamAttendance(widget.examId);
   }
+   Future<void> _showExportDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => ExportDialog(
+        title: 'Exporter les présences',
+        description: 'Sélectionnez le format d\'exportation pour la liste des présences de cet examen.',
+        examId: widget.examId,
+        isStudentExport: false,
+      ),
+    );
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -59,8 +71,9 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _loadData(),
+            icon: const Icon(Icons.download),
+            onPressed: _showExportDialog,
+            tooltip: 'Exporter les présences',
           ),
         ],
       ),

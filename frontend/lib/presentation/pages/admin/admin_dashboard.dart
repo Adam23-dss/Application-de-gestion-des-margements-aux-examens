@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:frontend1/presentation/pages/admin/create_exam_page.dart';
 import 'package:frontend1/presentation/pages/admin/create_user_page.dart';
+import 'package:frontend1/presentation/pages/admin/manage_courses_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_exams_page.dart';
+import 'package:frontend1/presentation/pages/admin/manage_rooms_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_students_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_users_page.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
@@ -341,9 +343,10 @@ class _AdminDashboardState extends State<AdminDashboard>
               Navigator.pop(context); // Fermer drawer
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ManageUsersPage(),
-                )
-                );
+                MaterialPageRoute(
+                  builder: (context) => const ManageUsersPage(),
+                ),
+              );
             },
           ),
           ListTile(
@@ -354,9 +357,10 @@ class _AdminDashboardState extends State<AdminDashboard>
               Navigator.pop(context); // Fermer drawer
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ManageStudentsPage(),
-                )
-                );
+                MaterialPageRoute(
+                  builder: (context) => const ManageStudentsPage(),
+                ),
+              );
             },
           ),
           ListTile(
@@ -374,16 +378,29 @@ class _AdminDashboardState extends State<AdminDashboard>
           ),
 
           ListTile(
-            leading: const Icon(Icons.menu_book, color: Colors.blue),
+            leading: const Icon(Icons.menu_book, color: Colors.green),
             title: const Text('Cours'),
             onTap: () {
-              // Naviguer vers la gestion des cours
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ManageCoursesPage(),
+                ),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.location_on, color: Colors.red),
             title: const Text('Salles'),
             onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ManageRoomsPage(),
+                ),
+              );
               // Naviguer vers la gestion des salles
             },
           ),
