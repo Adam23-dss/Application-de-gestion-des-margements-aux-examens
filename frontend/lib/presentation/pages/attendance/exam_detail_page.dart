@@ -1,6 +1,8 @@
 // lib/presentation/pages/attendance/exam_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:frontend1/data/models/exam_model.dart';
+import 'package:frontend1/presentation/pages/admin/add_student_to_exam_page.dart';
+import 'package:frontend1/presentation/pages/attendance/advanced_validation_page.dart';
 import 'package:frontend1/presentation/pages/attendance/qr_scanner_page.dart';
 import 'package:frontend1/presentation/widgets/export_dialog.dart';
 import 'package:provider/provider.dart';
@@ -13,12 +15,9 @@ import 'package:intl/intl.dart';
 
 class ExamDetailPage extends StatefulWidget {
   final int examId;
-  
-  const ExamDetailPage({
-    super.key,
-    required this.examId,
-  });
-  
+
+  const ExamDetailPage({super.key, required this.examId});
+
   @override
   State<ExamDetailPage> createState() => _ExamDetailPageState();
 }
@@ -29,28 +28,30 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
     super.initState();
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     final attendanceProvider = context.read<AttendanceProvider>();
     await attendanceProvider.loadExamAttendance(widget.examId);
   }
-   Future<void> _showExportDialog() async {
+
+  Future<void> _showExportDialog() async {
     await showDialog(
       context: context,
       builder: (context) => ExportDialog(
         title: 'Exporter les présences',
-        description: 'Sélectionnez le format d\'exportation pour la liste des présences de cet examen.',
+        description:
+            'Sélectionnez le format d\'exportation pour la liste des présences de cet examen.',
         examId: widget.examId,
         isStudentExport: false,
       ),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final examProvider = context.watch<ExamProvider>();
     final attendanceProvider = context.watch<AttendanceProvider>();
-    
+
     // Trouver l'examen
     final exam = examProvider.exams.firstWhere(
       (e) => e.id == widget.examId,
@@ -64,7 +65,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
         totalStudents: 0,
       ),
     );
-    
+
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Détails Examen',
@@ -75,9 +76,22 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
             onPressed: _showExportDialog,
             tooltip: 'Exporter les présences',
           ),
+          // Dans ExamDetailPage, ajouter dans actions app bar
+          IconButton(
+            icon: Icon(Icons.group_add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddStudentToExamPage(examId: exam.id),
+                ),
+              );
+            },
+            tooltip: 'Ajouter des étudiants',
+          ),
         ],
       ),
-      
+
       body: Column(
         children: [
           // En-tête de l'examen
@@ -105,7 +119,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 Row(
                   children: [
                     const Icon(Icons.event, size: 16, color: Colors.white),
@@ -117,10 +131,14 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                
+
                 Row(
                   children: [
-                    const Icon(Icons.access_time, size: 16, color: Colors.white),
+                    const Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       exam.formattedTime,
@@ -128,7 +146,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                     ),
                   ],
                 ),
-                
+
                 if (exam.courseName != null) ...[
                   const SizedBox(height: 4),
                   Row(
@@ -142,12 +160,16 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                     ],
                   ),
                 ],
-                
+
                 if (exam.roomName != null) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.white),
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         exam.roomName!,
@@ -159,7 +181,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
               ],
             ),
           ),
-          
+
           // Statistiques
           Container(
             padding: const EdgeInsets.all(16),
@@ -185,88 +207,116 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
               ],
             ),
           ),
-          
+
           // Liste des présences
           Expanded(
             child: attendanceProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : attendanceProvider.attendanceRecords.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.people_outline,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Aucune présence enregistrée',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey,
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.people_outline,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Aucune présence enregistrée',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            _showValidationOptions(context, exam);
+                          },
+                          child: const Text('Valider une présence'),
+                        ),
+                        // Dans ExamDetailPage, ajouter dans actions
+                        PopupMenuButton(
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'advanced',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.table_chart),
+                                  SizedBox(width: 8),
+                                  Text('Validation avancée'),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                _showValidationOptions(context, exam);
-                              },
-                              child: const Text('Valider une présence'),
                             ),
                           ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () => attendanceProvider.loadExamAttendance(widget.examId),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: attendanceProvider.attendanceRecords.length,
-                          itemBuilder: (context, index) {
-                            final attendance = attendanceProvider.attendanceRecords[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: attendance.statusColor.withOpacity(0.1),
-                                  child: Icon(
-                                    attendance.statusIcon,
-                                    color: attendance.statusColor,
-                                  ),
+                          onSelected: (value) {
+                            if (value == 'advanced') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AdvancedValidationPage(examId: exam.id),
                                 ),
-                                title: Text(
-                                  attendance.studentName ?? 'Étudiant inconnu',
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                subtitle: Text(attendance.studentCode ?? ''),
-                                trailing: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: attendance.statusColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    attendance.statusLabel,
-                                    style: TextStyle(
-                                      color: attendance.statusColor,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
+                              );
+                            }
                           },
                         ),
-                      ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () =>
+                        attendanceProvider.loadExamAttendance(widget.examId),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: attendanceProvider.attendanceRecords.length,
+                      itemBuilder: (context, index) {
+                        final attendance =
+                            attendanceProvider.attendanceRecords[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: attendance.statusColor
+                                  .withOpacity(0.1),
+                              child: Icon(
+                                attendance.statusIcon,
+                                color: attendance.statusColor,
+                              ),
+                            ),
+                            title: Text(
+                              attendance.studentName ?? 'Étudiant inconnu',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(attendance.studentCode ?? ''),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: attendance.statusColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                attendance.statusLabel,
+                                style: TextStyle(
+                                  color: attendance.statusColor,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
-      
+
       // Bouton d'action
       floatingActionButton: exam.isActive
           ? FloatingActionButton.extended(
@@ -281,7 +331,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
           : null,
     );
   }
-  
+
   Widget _buildStatItem(String label, String value, Color color) {
     return Column(
       children: [
@@ -301,17 +351,11 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
-  
+
   void _showValidationOptions(BuildContext context, ExamModel exam) {
     showModalBottomSheet(
       context: context,
@@ -335,16 +379,13 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               const Text(
                 'Valider une présence',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               _buildOptionCard(
                 context,
                 Icons.qr_code_scanner,
@@ -361,7 +402,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                   );
                 },
               ),
-              
+
               _buildOptionCard(
                 context,
                 Icons.keyboard,
@@ -373,16 +414,15 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ManualValidationPage(
-                        examId: exam.id,
-                      ),
+                      builder: (context) =>
+                          ManualValidationPage(examId: exam.id),
                     ),
                   );
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
@@ -396,7 +436,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
       },
     );
   }
-  
+
   Widget _buildOptionCard(
     BuildContext context,
     IconData icon,
@@ -437,10 +477,7 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                   ],
                 ),

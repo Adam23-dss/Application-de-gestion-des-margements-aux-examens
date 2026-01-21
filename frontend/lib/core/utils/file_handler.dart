@@ -6,74 +6,115 @@ import 'package:open_file/open_file.dart';
 import 'package:share_plus/share_plus.dart';
 
 class FileHandler {
-  // DEMANDER LES PERMISSIONS
+  // NOUVELLE MÉTHODE : GESTION DES PERMISSIONS AMÉLIORÉE
   static Future<bool> requestPermissions() async {
-    if (Platform.isAndroid) {
-      // Pour Android 13+ (API 33+)
-      if (Platform.isAndroid && await Permission.storage.isDenied) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          return false;
-        }
-      }
+    try {
+      print('🔐 Demande de permissions en cours...');
       
-      // Demander aussi la permission de gestion des fichiers si Android 11+
-      if (await Permission.manageExternalStorage.isDenied) {
-        final manageStatus = await Permission.manageExternalStorage.request();
-        if (!manageStatus.isGranted) {
-          // Essayer avec storage seulement
+      if (Platform.isAndroid) {
+        // Vérifier la version Android
+        if (await Permission.storage.isDenied) {
+          print('📱 Demande permission storage...');
           final storageStatus = await Permission.storage.request();
+          print('📱 Statut storage: ${storageStatus.name}');
+          
+          if (!storageStatus.isGranted) {
+            // Essayer avec manageExternalStorage pour Android 11+
+            if (await Permission.manageExternalStorage.isDenied) {
+              print('📱 Demande permission manageExternalStorage...');
+              final manageStatus = await Permission.manageExternalStorage.request();
+              print('📱 Statut manageExternalStorage: ${manageStatus.name}');
+              
+              if (!manageStatus.isGranted) {
+                // Dernier recours : demander des permissions de base
+                final photosStatus = await Permission.photos.request();
+                print('📱 Statut photos: ${photosStatus.name}');
+                return photosStatus.isGranted;
+              }
+              return manageStatus.isGranted;
+            }
+          }
           return storageStatus.isGranted;
         }
+        return true;
       }
+      
+      // Pour iOS
+      if (Platform.isIOS) {
+        final status = await Permission.photos.request();
+        print('📱 iOS Statut photos: ${status.name}');
+        return status.isGranted;
+      }
+      
+      return true;
+    } catch (e) {
+      print('❌ Erreur permissions: $e');
+      return false;
     }
-    
-    return true;
   }
   
-  // SAUVEGARDER UN FICHIER LOCALEMENT
+  // SAUVEGARDER UN FICHIER - VERSION AMÉLIORÉE
   static Future<File?> saveFile({
     required List<int> bytes,
     required String fileName,
     required String mimeType,
   }) async {
     try {
+      print('💾 Tentative de sauvegarde: $fileName');
+      
       // Vérifier les permissions
       final hasPermission = await requestPermissions();
       if (!hasPermission) {
-        throw Exception('Permissions de stockage non accordées');
+        print('❌ Permissions non accordées');
+        throw Exception('Veuillez accorder les permissions de stockage dans les paramètres de l\'application');
       }
       
-      // Chemin du répertoire de téléchargement
+      // Déterminer le répertoire
       Directory directory;
       if (Platform.isAndroid) {
-        // Essayer le répertoire Download
-        directory = Directory('/storage/emulated/0/Download');
-        if (!await directory.exists()) {
-          directory = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+        // Essayer plusieurs chemins
+        try {
+          directory = Directory('/storage/emulated/0/Download');
+          if (!await directory.exists()) {
+            print('📁 Download non trouvé, essai external storage...');
+            directory = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+          }
+        } catch (e) {
+          print('⚠️ Erreur chemin Android: $e');
+          directory = await getApplicationDocumentsDirectory();
         }
-      } else if (Platform.isIOS) {
-        // Pour iOS, utiliser le répertoire documents
-        directory = await getApplicationDocumentsDirectory();
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
       
-      // S'assurer que le répertoire existe
+      print('📁 Répertoire cible: ${directory.path}');
+      
+      // Créer le répertoire si nécessaire
       if (!await directory.exists()) {
+        print('📁 Création du répertoire...');
         await directory.create(recursive: true);
       }
       
-      // Créer le fichier
+      // Créer le chemin du fichier
       final filePath = '${directory.path}/$fileName';
-      final file = File(filePath);
+      print('📄 Chemin fichier: $filePath');
       
-      // Écrire les bytes dans le fichier
+      // Écrire le fichier
+      final file = File(filePath);
       await file.writeAsBytes(bytes, flush: true);
       
-      return file;
+      // Vérifier que le fichier existe
+      if (await file.exists()) {
+        print('✅ Fichier sauvegardé avec succès');
+        print('📊 Taille: ${file.lengthSync()} bytes');
+        return file;
+      } else {
+        print('❌ Fichier non créé');
+        return null;
+      }
+      
     } catch (e) {
-      print('Erreur sauvegarde fichier: $e');
+      print('❌ Erreur sauvegarde fichier: $e');
       return null;
     }
   }

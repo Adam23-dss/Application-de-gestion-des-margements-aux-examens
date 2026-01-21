@@ -155,4 +155,101 @@ class AttendanceRepository {
       throw Exception('Erreur lors de la recherche: $e');
     }
   }
+
+  // data/repositories/attendance_repository.dart - Ajouter
+Future<StudentModel?> getStudentDetails(String studentCode) async {
+  try {
+    final response = await _dio.get(
+      '/students/code/$studentCode',
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+      
+      if (responseData['success'] == true) {
+        return StudentModel.fromJson(responseData['data']);
+      }
+    }
+    return null;
+  } catch (e) {
+    print('❌ Error getting student details: $e');
+    return null;
+  }
+}
+
+Future<List<StudentModel>> getExamStudents(int examId) async {
+  try {
+    final response = await _dio.get(
+      '/exams/$examId/students',
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+      
+      if (responseData['success'] == true) {
+        return (responseData['data'] as List)
+            .map((studentJson) => StudentModel.fromJson(studentJson))
+            .toList();
+      }
+    }
+    return [];
+  } catch (e) {
+    print('❌ Error getting exam students: $e');
+    return [];
+  }
+}
+
+Future<Map<String, dynamic>> getStudentAttendanceHistory(int studentId) async {
+  try {
+    final response = await _dio.get(
+      '/students/$studentId/attendance',
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+      return responseData['data'] ?? {};
+    }
+    return {};
+  } catch (e) {
+    print('❌ Error getting attendance history: $e');
+    return {};
+  }
+}
+
+// Validation en masse (pour admin)
+Future<List<AttendanceModel>> bulkValidateAttendance({
+  required int examId,
+  required List<String> studentCodes,
+  String status = 'present',
+  String validationMethod = 'manual',
+}) async {
+  try {
+    final response = await _dio.post(
+      '/attendance/bulk',
+      data: {
+        'exam_id': examId,
+        'student_codes': studentCodes,
+        'status': status,
+        'validation_method': validationMethod,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+      
+      if (responseData['success'] == true) {
+        return (responseData['data'] as List)
+            .map((attendanceJson) => AttendanceModel.fromJson(attendanceJson))
+            .toList();
+      }
+    }
+    throw Exception('Failed to bulk validate');
+  } on DioException catch (e) {
+    if (e.response != null) {
+      final errorData = e.response!.data;
+      throw Exception(errorData['message'] ?? 'Network error');
+    }
+    throw Exception('Network error: ${e.message}');
+  }
+}
 }

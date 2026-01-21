@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend1/data/models/exam_registration_model.dart';
+import 'package:frontend1/presentation/providers/exam_registration_provider.dart';
 import 'package:frontend1/presentation/providers/export_provider.dart';
 import 'package:frontend1/presentation/providers/room_provider.dart';
 import 'package:frontend1/presentation/providers/user_provider.dart';
@@ -49,6 +51,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CourseProvider()),
         ChangeNotifierProvider(create: (_) => RoomProvider()),
         ChangeNotifierProvider(create: (_) => ExportProvider()),
+        ChangeNotifierProvider(create: (_) => ExamRegistrationProvider()),
       ],
       child: MaterialApp(
         title: 'Système de Gestion des Émargements',

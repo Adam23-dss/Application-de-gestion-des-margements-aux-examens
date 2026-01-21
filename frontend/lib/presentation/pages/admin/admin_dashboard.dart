@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend1/presentation/pages/admin/create_exam_page.dart';
 import 'package:frontend1/presentation/pages/admin/create_user_page.dart';
+import 'package:frontend1/presentation/pages/admin/export_students_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_courses_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_exams_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_rooms_page.dart';
@@ -404,6 +405,17 @@ class _AdminDashboardState extends State<AdminDashboard>
               // Naviguer vers la gestion des salles
             },
           ),
+          // Dans AdminDashboard ou Drawer
+          ListTile(
+            leading: Icon(Icons.qr_code_scanner),
+            title: Text('Surveillance'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ScanPage()),
+              );
+            },
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.bar_chart, color: Colors.teal),
@@ -417,6 +429,13 @@ class _AdminDashboardState extends State<AdminDashboard>
             title: const Text('Exports'),
             onTap: () {
               // Naviguer vers les exports
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExportStudentsPage(),
+                ),
+              );
             },
           ),
           const Divider(),

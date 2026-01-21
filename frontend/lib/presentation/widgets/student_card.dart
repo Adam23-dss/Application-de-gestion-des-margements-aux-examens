@@ -1,3 +1,4 @@
+// presentation/widgets/student_card.dart - VERSION CORRIGÉE
 import 'package:flutter/material.dart';
 import 'package:frontend1/data/models/student_model.dart';
 import 'package:frontend1/data/models/attendance_model.dart';
@@ -8,6 +9,7 @@ class StudentCard extends StatelessWidget {
   final AttendanceModel? attendance;
   final VoidCallback onTap;
   final VoidCallback? onValidate;
+  final Widget? trailing; // NOUVEAU PARAMÈTRE
   final bool showValidationStatus;
   final bool showValidationActions;
   final bool isSelectable;
@@ -19,6 +21,7 @@ class StudentCard extends StatelessWidget {
     this.attendance,
     required this.onTap,
     this.onValidate,
+    this.trailing, // AJOUTÉ ICI
     this.showValidationStatus = true,
     this.showValidationActions = false,
     this.isSelectable = false,
@@ -136,8 +139,12 @@ class StudentCard extends StatelessWidget {
                 ),
               ),
               
-              // Actions
-              if (showValidationActions && onValidate != null)
+              const SizedBox(width: 8),
+              
+              // Actions - UTILISER trailing SI FOURNI, sinon utiliser les actions par défaut
+              if (trailing != null)
+                trailing!
+              else if (showValidationActions && onValidate != null)
                 _buildValidationActions(context),
             ],
           ),
@@ -368,12 +375,14 @@ class CompactStudentCard extends StatelessWidget {
   final StudentModel student;
   final AttendanceModel? attendance;
   final VoidCallback onTap;
+  final Widget? trailing; // AJOUTER ICI AUSSI
   
   const CompactStudentCard({
     super.key,
     required this.student,
     this.attendance,
     required this.onTap,
+    this.trailing, // AJOUTER ICI AUSSI
   });
   
   @override
@@ -439,6 +448,8 @@ class CompactStudentCard extends StatelessWidget {
                 ),
               ),
               
+              const SizedBox(width: 8),
+              
               // Statut de présence
               if (attendance != null)
                 Container(
@@ -453,6 +464,122 @@ class CompactStudentCard extends StatelessWidget {
                     color: attendance!.statusColor,
                   ),
                 ),
+              
+              // Trailing widget (si fourni)
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing!,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// NOUVELLE VARIANTE : StudentCard pour les listes de sélection
+class SelectableStudentCard extends StatelessWidget {
+  final StudentModel student;
+  final bool isSelected;
+  final ValueChanged<bool> onSelectionChanged;
+  final Widget? leading;
+  final Widget? trailing;
+  
+  const SelectableStudentCard({
+    super.key,
+    required this.student,
+    required this.isSelected,
+    required this.onSelectionChanged,
+    this.leading,
+    this.trailing,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected
+            ? BorderSide(color: AppColors.primary, width: 2)
+            : BorderSide.none,
+      ),
+      child: InkWell(
+        onTap: () => onSelectionChanged(!isSelected),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Leading widget (checkbox)
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) => onSelectionChanged(value ?? false),
+                activeColor: AppColors.primary,
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Leading personnalisé
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 8),
+              ],
+              
+              // Informations étudiant
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student.fullName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    Text(
+                      student.studentCode,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    Row(
+                      children: [
+                        Icon(Icons.school, size: 14, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '${student.department} - ${student.ufr}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Trailing widget
+              if (trailing != null) trailing!,
             ],
           ),
         ),

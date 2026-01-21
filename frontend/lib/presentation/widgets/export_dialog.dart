@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:frontend1/core/utils/file_handler.dart';
 import 'package:frontend1/data/models/export_model.dart';
+import 'package:frontend1/presentation/pages/settings/permission_page.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/export_provider.dart';
 import 'package:frontend1/core/themes/app_colors.dart';
@@ -13,7 +14,7 @@ class ExportDialog extends StatefulWidget {
   final String description;
   final int? examId;
   final bool isStudentExport;
-  
+
   const ExportDialog({
     super.key,
     required this.title,
@@ -21,7 +22,7 @@ class ExportDialog extends StatefulWidget {
     this.examId,
     this.isStudentExport = false,
   });
-  
+
   @override
   State<ExportDialog> createState() => _ExportDialogState();
 }
@@ -30,7 +31,7 @@ class _ExportDialogState extends State<ExportDialog> {
   ExportAction? _selectedAction;
   bool _isProcessing = false;
   String? _errorMessage;
-  
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -41,7 +42,7 @@ class _ExportDialogState extends State<ExportDialog> {
         children: [
           Text(widget.description),
           const SizedBox(height: 20),
-          
+
           if (_errorMessage != null)
             Container(
               padding: const EdgeInsets.all(12),
@@ -64,7 +65,7 @@ class _ExportDialogState extends State<ExportDialog> {
                 ],
               ),
             ),
-          
+
           _buildExportOption(
             icon: Icons.picture_as_pdf,
             title: 'Exporter en PDF',
@@ -72,9 +73,9 @@ class _ExportDialogState extends State<ExportDialog> {
             action: ExportAction.pdf,
             selected: _selectedAction == ExportAction.pdf,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           _buildExportOption(
             icon: Icons.table_chart,
             title: 'Exporter en Excel',
@@ -109,7 +110,7 @@ class _ExportDialogState extends State<ExportDialog> {
       ],
     );
   }
-  
+
   Widget _buildExportOption({
     required IconData icon,
     required String title,
@@ -122,7 +123,9 @@ class _ExportDialogState extends State<ExportDialog> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withOpacity(0.1) : Colors.grey[50],
+          color: selected
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.primary : Colors.grey[300]!,
@@ -144,46 +147,79 @@ class _ExportDialogState extends State<ExportDialog> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: selected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: selected ? AppColors.primary : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
             if (selected)
-              Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 20,
-              ),
+              Icon(Icons.check_circle, color: AppColors.primary, size: 20),
           ],
         ),
       ),
     );
   }
-  
+
+  // Dans ExportDialog, ajoutez cette méthode
+  Future<void> _handleExportError(BuildContext context, String error) async {
+    if (error.contains('permission') || error.contains('Permission')) {
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Permission requise'),
+          content: const Text(
+            'L\'exportation nécessite l\'accès au stockage. '
+            'Voulez-vous ouvrir les paramètres de permissions ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Plus tard'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PermissionPage(),
+                  ),
+                );
+              },
+              child: const Text('Paramètres'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $error'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   Future<void> _export() async {
     if (_selectedAction == null) return;
-    
+
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
     });
-    
+
     try {
       final exportProvider = context.read<ExportProvider>();
-      
+
       ExportData exportData;
-      
+
       if (widget.isStudentExport) {
         if (_selectedAction == ExportAction.pdf) {
           exportData = await exportProvider.exportStudentsPDF();
@@ -194,41 +230,52 @@ class _ExportDialogState extends State<ExportDialog> {
         if (widget.examId == null) {
           throw Exception('ID d\'examen requis');
         }
-        
+
         if (_selectedAction == ExportAction.pdf) {
           exportData = await exportProvider.exportAttendancePDF(widget.examId!);
         } else {
-          exportData = await exportProvider.exportAttendanceExcel(widget.examId!);
+          exportData = await exportProvider.exportAttendanceExcel(
+            widget.examId!,
+          );
         }
       }
-      
+
+      print(
+        '✅ Fichier téléchargé, taille: ${exportData.fileBytes.length} bytes',
+      );
+
       // Sauvegarder le fichier
       final file = await FileHandler.saveFile(
         bytes: exportData.fileBytes,
         fileName: exportData.fileName,
         mimeType: exportData.mimeType,
       );
-      
+
       if (file == null) {
         throw Exception('Impossible de sauvegarder le fichier');
       }
-      
+      print('✅ Fichier sauvegardé: ${file.path}');
       // Montrer le dialogue de succès
       await _showSuccessDialog(file, exportData);
-      
+
       // Fermer le dialogue d'export
       if (mounted) {
         Navigator.pop(context);
       }
-      
     } catch (e) {
+      print('❌ Erreur export: $e');
+
+      // Gérer spécifiquement les erreurs de permission
+      if (mounted) {
+        await _handleExportError(context, e.toString());
+      }
       setState(() {
         _errorMessage = e.toString();
         _isProcessing = false;
       });
     }
   }
-  
+
   Future<void> _showSuccessDialog(File file, ExportData exportData) async {
     return showDialog(
       context: context,
@@ -255,10 +302,7 @@ class _ExportDialogState extends State<ExportDialog> {
             const SizedBox(height: 8),
             Text(
               file.path.split('/').last,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
