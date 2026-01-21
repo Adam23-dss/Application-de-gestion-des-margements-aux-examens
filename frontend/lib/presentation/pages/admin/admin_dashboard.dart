@@ -809,12 +809,6 @@ class _TodayView extends StatelessWidget {
                             Colors.red,
                             Icons.cancel,
                           ),
-                          _buildDailyStat(
-                            'Taux',
-                            '${dailyStats.attendanceRate}%',
-                            Colors.blue,
-                            Icons.percent,
-                          ),
                         ],
                       ),
                     ],

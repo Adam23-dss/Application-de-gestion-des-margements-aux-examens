@@ -16,61 +16,107 @@ class DashboardStats {
   });
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
+    // Fonction pour convertir en int (gère String et int)
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) {
+        try {
+          return int.tryParse(value) ?? 0;
+        } catch (e) {
+          print('⚠️ Error parsing int from string: $value');
+          return 0;
+        }
+      }
+      if (value is double) return value.toInt();
+      return 0;
+    }
+
     return DashboardStats(
-      totalUsers: json['totalUsers'] ?? 0,
-      totalStudents: json['totalStudents'] ?? 0,
-      todayExams: json['todayExams'] ?? 0,
-      activeExams: json['activeExams'] ?? 0,
-      todayPresent: json['todayPresent'] ?? 0,
-      monthlyExams: json['monthlyExams'] ?? 0,
+      totalUsers: parseInt(json['totalUsers']),
+      totalStudents: parseInt(json['totalStudents']),
+      todayExams: parseInt(json['todayExams']),
+      activeExams: parseInt(json['activeExams']),
+      todayPresent: parseInt(json['todayPresent']),
+      monthlyExams: parseInt(json['monthlyExams']),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'totalUsers': totalUsers,
-      'totalStudents': totalStudents,
-      'todayExams': todayExams,
-      'activeExams': activeExams,
-      'todayPresent': todayPresent,
-      'monthlyExams': monthlyExams,
-    };
-  }
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     'totalUsers': totalUsers,
+  //     'totalStudents': totalStudents,
+  //     'todayExams': todayExams,
+  //     'activeExams': activeExams,
+  //     'todayPresent': todayPresent,
+  //     'monthlyExams': monthlyExams,
+  //   };
+  // }
 }
 
 class DailyStats {
   final String date;
-  final List<ExamDailyStat> exams;
+  final List<ExamStats> exams;
   final DailyTotals totals;
-  final String attendanceRate;
-
-  DailyStats({
-    required this.date,
-    required this.exams,
-    required this.totals,
-    required this.attendanceRate,
-  });
+  DailyStats({required this.date, required this.exams, required this.totals});
 
   factory DailyStats.fromJson(Map<String, dynamic> json) {
-    final exams = (json['exams'] as List? ?? [])
-        .map((e) => ExamDailyStat.fromJson(e))
-        .toList();
-
-    final totals = DailyTotals.fromJson(json['totals'] ?? {});
+    // Conversion sûre pour la date
+    String parseDate(dynamic value) {
+      if (value == null) return DateTime.now().toIso8601String().split('T')[0];
+      if (value is String) return value;
+      return value.toString();
+    }
 
     return DailyStats(
-      date: json['date']?.toString() ?? '',
-      exams: exams,
-      totals: totals,
-      attendanceRate: json['attendanceRate']?.toString() ?? '0.0',
+      date: parseDate(json['date']),
+      totals: DailyTotals.fromJson(json['totals'] ?? {}),
+      exams: (json['exams'] as List? ?? [])
+          .map((examJson) => ExamStats.fromJson(examJson))
+          .toList(),
     );
   }
 }
 
-class ExamDailyStat {
+class DailyTotals {
+  final int total;
+  final int present;
+  final int absent;
+  final int late;
+  final int excused;
+  final double attendanceRate;
+
+  DailyTotals({
+    required this.total,
+    required this.present,
+    required this.absent,
+    required this.late,
+    required this.excused,
+    required this.attendanceRate,
+  });
+
+  factory DailyTotals.fromJson(Map<String, dynamic> json) {
+    // Fonction de conversion générique
+    int parseInt(dynamic value) =>
+        (value is int) ? value : (int.tryParse(value?.toString() ?? '0') ?? 0);
+    double parseDouble(dynamic value) => (value is double)
+        ? value
+        : (double.tryParse(value?.toString() ?? '0.0') ?? 0.0);
+
+    return DailyTotals(
+      total: parseInt(json['total']),
+      present: parseInt(json['present']),
+      absent: parseInt(json['absent']),
+      late: parseInt(json['late']),
+      excused: parseInt(json['excused']),
+      attendanceRate: parseDouble(json['attendance_rate']),
+    );
+  }
+}
+
+class ExamStats {
   final int id;
   final String examName;
-  final String examDate;
   final String startTime;
   final String endTime;
   final int totalStudents;
@@ -78,11 +124,11 @@ class ExamDailyStat {
   final int absentCount;
   final int lateCount;
   final int excusedCount;
+  final double attendanceRate;
 
-  ExamDailyStat({
+  ExamStats({
     required this.id,
     required this.examName,
-    required this.examDate,
     required this.startTime,
     required this.endTime,
     required this.totalStudents,
@@ -90,46 +136,25 @@ class ExamDailyStat {
     required this.absentCount,
     required this.lateCount,
     required this.excusedCount,
+    required this.attendanceRate,
   });
 
-  factory ExamDailyStat.fromJson(Map<String, dynamic> json) {
-    return ExamDailyStat(
-      id: json['id'] ?? 0,
-      examName: json['exam_name']?.toString() ?? '',
-      examDate: json['exam_date']?.toString() ?? '',
-      startTime: json['start_time']?.toString() ?? '',
-      endTime: json['end_time']?.toString() ?? '',
-      totalStudents: json['total_students'] ?? 0,
-      presentCount: json['present_count'] ?? 0,
-      absentCount: json['absent_count'] ?? 0,
-      lateCount: json['late_count'] ?? 0,
-      excusedCount: json['excused_count'] ?? 0,
-    );
-  }
-}
-
-class DailyTotals {
-  final int totalStudents;
-  final int present;
-  final int absent;
-  final int late;
-  final int excused;
-
-  DailyTotals({
-    required this.totalStudents,
-    required this.present,
-    required this.absent,
-    required this.late,
-    required this.excused,
-  });
-
-  factory DailyTotals.fromJson(Map<String, dynamic> json) {
-    return DailyTotals(
-      totalStudents: json['totalStudents'] ?? 0,
-      present: json['present'] ?? 0,
-      absent: json['absent'] ?? 0,
-      late: json['late'] ?? 0,
-      excused: json['excused'] ?? 0,
+  factory ExamStats.fromJson(Map<String, dynamic> json) {
+    return ExamStats(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      examName: json['exam_name']?.toString() ?? 'Examen',
+      totalStudents:
+          int.tryParse(json['total_students']?.toString() ?? '0') ?? 0,
+      presentCount: int.tryParse(json['present_count']?.toString() ?? '0') ?? 0,
+      startTime: json['start_time']?.toString() ?? '09:00',
+      endTime: json['end_time']?.toString() ?? '12:00',
+      absentCount: int.tryParse(json['absent_count']?.toString() ?? '0') ?? 0,
+      lateCount: int.tryParse(json['late_count']?.toString() ?? '0') ?? 0,
+      excusedCount: int.tryParse(json['excused_count']?.toString() ?? '0') ?? 0,
+      attendanceRate: (json['attendance_rate'] is double)
+          ? json['attendance_rate']
+          : (double.tryParse(json['attendance_rate']?.toString() ?? '0.0') ??
+                0.0),
     );
   }
 }

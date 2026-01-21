@@ -48,7 +48,7 @@ class ApiEndpoints {
   static const String stats = '$baseUrl/stats';
   static const String dashboardStats = '$stats/dashboard';
   static String dailyStats(String date) => '$stats/daily/$date';
-  static String examStats(String examId) => '$stats/exam/$examId';
+  static String examStats(int examId) => '$stats/exam/$examId';
   
   // Exports
   static const String exports = '$baseUrl/exports';
