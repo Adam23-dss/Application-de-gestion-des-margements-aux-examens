@@ -9,6 +9,7 @@ import 'package:frontend1/presentation/pages/admin/manage_students_page.dart';
 import 'package:frontend1/presentation/pages/admin/manage_users_page.dart';
 import 'package:frontend1/presentation/pages/attendance/scan_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
+import 'package:frontend1/presentation/pages/qr/generate_qr_page.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/providers/dashboard_provider.dart';
@@ -438,6 +439,19 @@ class _AdminDashboardState extends State<AdminDashboard>
               );
             },
           ),
+
+          ListTile(
+            leading: const Icon(Icons.qr_code_2, color: Colors.purple),
+            title: const Text('Générer QR Codes'),
+            onTap: () {
+              Navigator.pop(context); // Fermer le drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GenerateQRPage()),
+              );
+            },
+          ),
+
           const Divider(),
           ListTile(
             leading: const Icon(Icons.settings, color: Colors.grey),
@@ -645,6 +659,20 @@ class _GlobalView extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const CreateUserPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildQuickAction(
+                          context,
+                          Icons.qr_code_2,
+                          'Générer QR',
+                          Colors.purple,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const GenerateQRPage(),
                               ),
                             );
                           },

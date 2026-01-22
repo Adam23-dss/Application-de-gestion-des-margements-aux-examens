@@ -498,6 +498,13 @@ class _AddStudentToExamPageState extends State<AddStudentToExamPage> {
       appBar: CustomAppBar(
         title: 'Ajouter des étudiants',
         showBackButton: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _loadData(),
+            tooltip: 'Actualiser',
+          ),
+        ],
       ),
       
       body: SingleChildScrollView(

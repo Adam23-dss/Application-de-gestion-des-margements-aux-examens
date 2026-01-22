@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:frontend1/data/models/exam_registration_model.dart';
 import 'package:frontend1/presentation/providers/exam_registration_provider.dart';
 import 'package:frontend1/presentation/providers/export_provider.dart';
+import 'package:frontend1/presentation/providers/qr_code_provider.dart';
 import 'package:frontend1/presentation/providers/room_provider.dart';
 import 'package:frontend1/presentation/providers/user_provider.dart';
 import 'package:intl/date_symbol_data_local.dart'; // Ajoute cette importation
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RoomProvider()),
         ChangeNotifierProvider(create: (_) => ExportProvider()),
         ChangeNotifierProvider(create: (_) => ExamRegistrationProvider()),
+        ChangeNotifierProvider(create: (_) => QRCodeProvider()),
       ],
       child: MaterialApp(
         title: 'Système de Gestion des Émargements',

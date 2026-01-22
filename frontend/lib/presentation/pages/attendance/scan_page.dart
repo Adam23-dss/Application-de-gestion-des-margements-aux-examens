@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend1/data/models/exam_model.dart';
+import 'package:frontend1/presentation/pages/admin/admin_dashboard.dart';
 import 'package:frontend1/presentation/pages/attendance/manual_validation_page.dart';
 import 'package:frontend1/presentation/pages/auth/login_page.dart';
 import 'package:frontend1/presentation/pages/attendance/qr_scanner_page.dart';
+import 'package:frontend1/presentation/pages/qr/generate_qr_page.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/providers/exam_provider.dart';
@@ -324,13 +326,35 @@ class _ScanPageState extends State<ScanPage>
             },
           ),
           ListTile(
-            leading: const Icon(Icons.people, color: Colors.purple),
-            title: const Text('Gérer les étudiants'),
+            leading: const Icon(Icons.qr_code_2, color: Colors.purple),
+            title: const Text('Générer QR Codes'),
             onTap: () {
-              Navigator.pop(context);
-              // Naviguer vers la gestion des étudiants
+              Navigator.pop(context); // Fermer le drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GenerateQRPage()),
+              );
             },
           ),
+          if (authProvider.user?.isAdmin == true) ...[
+            ListTile(
+              leading: const Icon(
+                Icons.admin_panel_settings,
+                color: Colors.orange,
+              ),
+              title: const Text('Panneau Admin'),
+              onTap: () {
+                Navigator.pop(context);
+                // Naviguer vers le panneau admin
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminDashboard(),
+                  ),
+                );
+              },
+            ),
+          ],
           const Divider(),
           ListTile(
             leading: const Icon(Icons.settings, color: Colors.grey),
@@ -490,9 +514,13 @@ class _ScanPageState extends State<ScanPage>
   }
 
   void _openExamDetails(ExamModel exam) {
+    final authProvider = context.read<AuthProvider>();
+    bool auth = authProvider.user?.isAdmin == true ? true : false;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ExamDetailPage(examId: exam.id)),
+      MaterialPageRoute(
+        builder: (context) => ExamDetailPage(examId: exam.id, isAdmin: auth),
+      ),
     );
   }
 

@@ -21,11 +21,10 @@ class ExamRegistrationRepository {
         '${ApiEndpoints.exams}/$examId/students',
         data: {
           'student_id': studentId,
-          if (notes != null) 'notes': notes,
         },
       );
       
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         final responseData = response.data;
         
         if (responseData['success'] == true) {

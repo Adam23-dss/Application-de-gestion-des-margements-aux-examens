@@ -15,8 +15,9 @@ import 'package:intl/intl.dart';
 
 class ExamDetailPage extends StatefulWidget {
   final int examId;
+  final bool isAdmin;
 
-  const ExamDetailPage({super.key, required this.examId});
+  const ExamDetailPage({super.key, required this.examId, required this.isAdmin});
 
   @override
   State<ExamDetailPage> createState() => _ExamDetailPageState();
@@ -72,12 +73,12 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _showExportDialog,
-            tooltip: 'Exporter les présences',
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _loadData(),
+            tooltip: 'Actualiser',
           ),
           // Dans ExamDetailPage, ajouter dans actions app bar
-          IconButton(
+          if(widget.isAdmin) IconButton(
             icon: Icon(Icons.group_add),
             onPressed: () {
               Navigator.push(
@@ -228,28 +229,16 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                           style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
                         const SizedBox(height: 8),
-                        ElevatedButton(
+                        if(widget.isAdmin == false) ElevatedButton(
                           onPressed: () {
                             _showValidationOptions(context, exam);
                           },
                           child: const Text('Valider une présence'),
                         ),
-                        // Dans ExamDetailPage, ajouter dans actions
-                        PopupMenuButton(
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'advanced',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.table_chart),
-                                  SizedBox(width: 8),
-                                  Text('Validation avancée'),
-                                ],
-                              ),
-                            ),
-                          ],
-                          onSelected: (value) {
-                            if (value == 'advanced') {
+                        
+                          const SizedBox(height: 8),
+                          if(widget.isAdmin) ElevatedButton(                            
+                            onPressed: (){
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -257,10 +246,11 @@ class _ExamDetailPageState extends State<ExamDetailPage> {
                                       AdvancedValidationPage(examId: exam.id),
                                 ),
                               );
-                            }
-                          },
-                        ),
-                      ],
+                            }, 
+                            child: const Text('Validation avancée'),
+                          ),
+                        ]
+                        // Dans ExamDetailPage, ajouter dans actions
                     ),
                   )
                 : RefreshIndicator(

@@ -17,4 +17,17 @@ class AppConstants {
   // Durées
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration snackbarDuration = Duration(seconds: 3);
+
+   // QR Code Configuration
+  static const String qrSecret = 'default_qr_secret_change_in_production'; // À changer en production !
+  static const int qrValidityMinutes = 30;
+  static const String qrDataVersion = '1.0';
+  
+  // QR Code Status
+  static const String qrStatusActive = 'active';
+  static const String qrStatusExpired = 'expired';
+  static const String qrStatusUsed = 'used';
+  
+  // QR Code Generation
+  static const int maxBulkQRGeneration = 100;
 }

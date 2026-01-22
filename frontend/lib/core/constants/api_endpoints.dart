@@ -54,6 +54,15 @@ class ApiEndpoints {
   static const String exports = '$baseUrl/exports';
   static String exportAttendancePDF(int id) => '$exports/attendance/$id/pdf';
   static String exportAttendanceExcel(int id) => '$exports/attendance/$id/excel';
+
+  // QR Codes (intégrés dans les routes exam)
+  static String generateQRCode(int examId) => '$baseUrl/exams/$examId/generate-qr';
+  static String generateBulkQRCodes(int examId) => '$baseUrl/exams/$examId/generate-bulk-qr';
+  static String verifyQRCode(int examId) => '$baseUrl/exams/$examId/verify-qr';
+  static String validateFromQRCode(int examId) => '$baseUrl/exams/$examId/validate-qr';
+  static String qrCodeHistory(int examId) => '$baseUrl/exams/$examId/qr-history';
+  static String activeQRCodes(int examId) => '$baseUrl/exams/$examId/active-qr-codes';
+  
 }
 
 class PaginationData {

@@ -1,5 +1,6 @@
-// lib/presentation/pages/attendance/qr_scanner_page.dart - API CORRECTE
+// lib/presentation/pages/attendance/qr_scanner_page.dart - VERSION MODIFIÉE
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:frontend1/data/models/exam_model.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -7,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:frontend1/presentation/providers/auth_provider.dart';
 import 'package:frontend1/presentation/providers/attendance_provider.dart';
 import 'package:frontend1/presentation/providers/exam_provider.dart';
+import 'package:frontend1/presentation/providers/qr_code_provider.dart'; // AJOUT IMPORT
 import 'package:frontend1/presentation/widgets/custom_app_bar.dart';
 import 'package:frontend1/presentation/pages/attendance/manual_validation_page.dart';
 import 'package:frontend1/core/themes/app_colors.dart';
@@ -104,6 +106,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
       Vibration.vibrate(duration: 100);
     }
     
+    final qrProvider = context.read<QRCodeProvider>();
     final attendanceProvider = context.read<AttendanceProvider>();
     final examProvider = context.read<ExamProvider>();
     
@@ -119,22 +122,107 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
     
     try {
+      // Essayer d'abord avec la nouvelle API QR
+      await _processQRCodeWithNewAPI(examId, code, qrProvider, attendanceProvider);
+      
+    } catch (e) {
+      print('QR Code API error: $e');
+      
+      // Fallback sur l'ancienne méthode si nécessaire
+      try {
+        await _processQRCodeWithOldAPI(examId, code, attendanceProvider);
+      } catch (e2) {
+        _showMessage('Erreur: $e2', isError: true);
+        _resumeScanner();
+      }
+    }
+  }
+  
+  Future<void> _processQRCodeWithNewAPI(
+    int examId, 
+    String qrString,
+    QRCodeProvider qrProvider,
+    AttendanceProvider attendanceProvider,
+  ) async {
+    try {
+      // 1. Vérifier le QR code
+      final verification = await qrProvider.verifyQRCode(
+        examId: examId,
+        qrString: qrString,
+      );
+      
+      if (verification == null || !verification.isValid) {
+        _showMessage('QR code invalide: ${verification?.error}', isError: true);
+        _resumeScanner();
+        return;
+      }
+      
+      if (verification.alreadyAttended) {
+        _showSuccessDialog(
+          verification.student?.name ?? 'Étudiant',
+          verification.student?.code ?? '',
+          alreadyAttended: true,
+        );
+        _resumeScanner();
+        return;
+      }
+      
+      // 2. Valider la présence
+      final result = await qrProvider.validateAttendanceFromQR(
+        examId: examId,
+        qrString: qrString,
+      );
+      
+      if (result != null) {
+        final studentName = result['student']?['name'] ?? 'Étudiant';
+        final studentCode = result['student']?['code'] ?? '';
+        _showSuccessDialog(studentName, studentCode);
+        
+        Future.delayed(const Duration(seconds: 2), () {
+          _resumeScanner();
+        });
+      } else {
+        _showMessage('Erreur de validation', isError: true);
+        _resumeScanner();
+      }
+      
+    } catch (e) {
+      print('New QR API error: $e');
+      throw e;
+    }
+  }
+  
+  Future<void> _processQRCodeWithOldAPI(
+    int examId, 
+    String code,
+    AttendanceProvider attendanceProvider,
+  ) async {
+    try {
+      // Décoder le QR code pour obtenir l'ID étudiant
+      final qrData = jsonDecode(code) as Map<String, dynamic>;
+      final studentId = qrData['student_id']?.toString();
+      
+      if (studentId == null) {
+        throw Exception('QR code ne contient pas d\'ID étudiant');
+      }
+      
       await attendanceProvider.validateAttendance(
         examId: examId,
-        studentCode: code,
+        studentCode: studentId,
         status: 'present',
         validationMethod: 'qr_code',
       );
       
-      _showSuccessDialog(code);
+      _showSuccessDialog(qrData['full_name']?.toString() ?? 'Étudiant', 
+                        qrData['student_code']?.toString() ?? '');
       
       Future.delayed(const Duration(seconds: 2), () {
         _resumeScanner();
       });
       
     } catch (e) {
-      _showMessage('Erreur: $e', isError: true);
-      _resumeScanner();
+      print('Old QR API error: $e');
+      throw e;
     }
   }
   
@@ -146,7 +234,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
   }
   
-  void _showSuccessDialog(String studentCode) {
+  void _showSuccessDialog(String studentName, String studentCode, {bool alreadyAttended = false}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -165,7 +253,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.95),
+                color: alreadyAttended ? Colors.blue.withOpacity(0.95) : Colors.green.withOpacity(0.95),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -178,14 +266,14 @@ class _QRScannerPageState extends State<QRScannerPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.check_circle,
+                  Icon(
+                    alreadyAttended ? Icons.info : Icons.check_circle,
                     size: 64,
                     color: Colors.white,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'PRÉSENCE VALIDÉE',
+                    alreadyAttended ? 'DÉJÀ PRÉSENT' : 'PRÉSENCE VALIDÉE',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -194,11 +282,19 @@ class _QRScannerPageState extends State<QRScannerPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    studentCode,
+                    studentName,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    studentCode,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -266,6 +362,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
   Widget build(BuildContext context) {
     final examProvider = context.watch<ExamProvider>();
     final attendanceProvider = context.watch<AttendanceProvider>();
+    final qrProvider = context.watch<QRCodeProvider>();
     
     final currentExam = _getCurrentExam(examProvider);
 
@@ -338,7 +435,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
           ),
           
           // Messages d'état
-          if (attendanceProvider.error != null) _buildErrorContainer(attendanceProvider),
+          if (attendanceProvider.error != null || qrProvider.error != null) 
+            _buildErrorContainer(attendanceProvider, qrProvider),
           
           // Contrôles
           _buildControls(currentExam),
@@ -611,7 +709,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
   
-  Widget _buildErrorContainer(AttendanceProvider attendanceProvider) {
+  Widget _buildErrorContainer(AttendanceProvider attendanceProvider, QRCodeProvider qrProvider) {
+    final error = attendanceProvider.error ?? qrProvider.error;
+    
     return Container(
       padding: const EdgeInsets.all(12),
       color: Colors.red.withOpacity(0.9),
@@ -621,13 +721,16 @@ class _QRScannerPageState extends State<QRScannerPage> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              attendanceProvider.error!,
+              error!,
               style: const TextStyle(color: Colors.white),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: attendanceProvider.clearError,
+            onPressed: () {
+              attendanceProvider.clearError();
+              qrProvider.clearError();
+            },
           ),
         ],
       ),
