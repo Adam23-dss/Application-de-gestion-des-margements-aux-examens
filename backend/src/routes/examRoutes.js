@@ -122,4 +122,39 @@ router.get('/:id/statistics',
   examController.getStatistics
 );
 
+// routes/exam.js - AJOUTER CES ROUTES APRÈS LES AUTRES ROUTES
+
+/**
+ * @route   POST /api/exams/:id/generate-qr
+ * @desc    Générer un QR code pour un étudiant dans un examen
+ * @access  Private (admin, supervisor, student)
+ * @body    {student_id: string}
+ */
+router.post('/:id/generate-qr',
+  authMiddleware.authenticate,
+  examController.generateQRCode
+);
+
+/**
+ * @route   POST /api/exams/:id/generate-bulk-qr
+ * @desc    Générer des QR codes en masse pour un examen
+ * @access  Private (admin, supervisor)
+ * @body    {student_ids: string[]}
+ */
+router.post('/:id/generate-bulk-qr',
+  authMiddleware.authorize('admin', 'supervisor'),
+  examController.generateBulkQRCodes
+);
+
+/**
+ * @route   POST /api/exams/:id/verify-qr
+ * @desc    Vérifier un QR code scanné
+ * @access  Private (admin, supervisor)
+ * @body    {qr_data: string}
+ */
+router.post('/:id/verify-qr',
+  authMiddleware.authorize('admin', 'supervisor'),
+  examController.verifyQRCode
+);
+
 module.exports = router;

@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const crypto = require('crypto');
 
 class Exam {
   // Récupérer tous les examens
@@ -309,6 +310,243 @@ class Exam {
     const result = await db.query(query, [examId]);
     return result.rows;
   }
+
+   static async generateQRCode(examId, studentId) {
+    // Vérifier que l'étudiant est inscrit à l'examen
+    const registrationQuery = `
+      SELECT er.id 
+      FROM exam_registrations er
+      WHERE er.exam_id = $1 AND er.student_id = $2
+    `;
+    
+    const registration = await db.query(registrationQuery, [examId, studentId]);
+    
+    if (registration.rows.length === 0) {
+      throw new Error('Étudiant non inscrit à cet examen');
+    }
+
+    // Récupérer les informations de l'étudiant et de l'examen
+    const studentQuery = `
+      SELECT id, student_code, first_name, last_name, email
+      FROM students
+      WHERE id = $1 AND is_active = true
+    `;
+
+    const examQuery = `
+      SELECT id, name, exam_date, start_time
+      FROM exams
+      WHERE id = $1
+    `;
+
+    const [studentResult, examResult] = await Promise.all([
+      db.query(studentQuery, [studentId]),
+      db.query(examQuery, [examId])
+    ]);
+
+    const student = studentResult.rows[0];
+    const exam = examResult.rows[0];
+
+    if (!student) {
+      throw new Error('Étudiant non trouvé');
+    }
+
+    if (!exam) {
+      throw new Error('Examen non trouvé');
+    }
+
+    // Générer les données du QR code
+    const qrData = {
+      version: '1.0',
+      student_id: student.id,
+      student_code: student.student_code,
+      full_name: `${student.first_name} ${student.last_name}`,
+      email: student.email,
+      exam_id: exam.id,
+      exam_name: exam.name,
+      exam_date: exam.exam_date,
+      exam_time: exam.start_time,
+      generated_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
+    };
+
+    // Générer un hash de sécurité
+    const secret = process.env.QR_SECRET || 'default_qr_secret';
+    const hashInput = `${qrData.student_id}:${qrData.exam_id}:${qrData.generated_at}:${secret}`;
+    qrData.hash = crypto.createHash('sha256').update(hashInput).digest('hex');
+
+    return qrData;
+  }
+
+  /**
+   * Générer des QR codes en masse pour un examen
+   */
+  static async generateBulkQRCodes(examId, studentIds) {
+    // Vérifier que l'examen existe
+    const examExists = await db.query('SELECT id FROM exams WHERE id = $1', [examId]);
+    if (examExists.rows.length === 0) {
+      throw new Error('Examen non trouvé');
+    }
+
+    const qrCodes = {};
+    const errors = [];
+
+    for (const studentId of studentIds) {
+      try {
+        const qrData = await this.generateQRCode(examId, studentId);
+        qrCodes[studentId] = qrData;
+      } catch (error) {
+        errors.push({
+          student_id: studentId,
+          error: error.message
+        });
+      }
+    }
+
+    return {
+      qr_codes: qrCodes,
+      errors: errors,
+      total_generated: Object.keys(qrCodes).length,
+      total_failed: errors.length
+    };
+  }
+
+  /**
+   * Vérifier un QR code scanné
+   */
+  static async verifyQRCode(qrDataString, examId) {
+    try {
+      // Parser le QR code
+      const qrData = JSON.parse(qrDataString);
+
+      // Vérifier la version
+      if (qrData.version !== '1.0') {
+        throw new Error('Version de QR code non supportée');
+      }
+
+      // Vérifier l'expiration
+      const now = new Date();
+      const expiresAt = new Date(qrData.expires_at);
+      if (now > expiresAt) {
+        throw new Error('QR code expiré');
+      }
+
+      // Vérifier le hash de sécurité
+      const secret = process.env.QR_SECRET || 'default_qr_secret';
+      const hashInput = `${qrData.student_id}:${qrData.exam_id}:${qrData.generated_at}:${secret}`;
+      const calculatedHash = crypto.createHash('sha256').update(hashInput).digest('hex');
+
+      if (qrData.hash !== calculatedHash) {
+        throw new Error('QR code invalide (hash incorrect)');
+      }
+
+      // Vérifier que le QR code correspond à l'examen scanné
+      if (parseInt(qrData.exam_id) !== parseInt(examId)) {
+        throw new Error('QR code ne correspond pas à cet examen');
+      }
+
+      // Vérifier que l'étudiant est inscrit à l'examen
+      const registrationQuery = `
+        SELECT er.id, s.student_code, s.first_name, s.last_name
+        FROM exam_registrations er
+        JOIN students s ON er.student_id = s.id
+        WHERE er.exam_id = $1 AND er.student_id = $2
+      `;
+      
+      const registration = await db.query(registrationQuery, [examId, qrData.student_id]);
+
+      if (registration.rows.length === 0) {
+        throw new Error('Étudiant non inscrit à cet examen');
+      }
+
+      // Récupérer les informations de présence existantes
+      const attendanceQuery = `
+        SELECT status, validation_time
+        FROM attendance
+        WHERE exam_id = $1 AND student_id = $2
+      `;
+
+      const attendance = await db.query(attendanceQuery, [examId, qrData.student_id]);
+
+      return {
+        student: registration.rows[0],
+        qr_data: qrData,
+        existing_attendance: attendance.rows[0] || null,
+        is_valid: true,
+        message: 'QR code valide'
+      };
+    } catch (error) {
+      return {
+        is_valid: false,
+        error: error.message,
+        qr_data: null,
+        student: null
+      };
+    }
+  }
+
+  /**
+   * Obtenir l'historique des QR codes générés
+   */
+  static async getQRCodeHistory(examId, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    // Cette table doit être créée (voir section 4)
+    const query = `
+      SELECT 
+        qr.id,
+        qr.student_id,
+        s.student_code,
+        s.first_name,
+        s.last_name,
+        qr.generated_at,
+        qr.expires_at,
+        qr.generated_by,
+        u.first_name as generated_by_first_name,
+        u.last_name as generated_by_last_name
+      FROM qr_codes qr
+      JOIN students s ON qr.student_id = s.id
+      LEFT JOIN users u ON qr.generated_by = u.id
+      WHERE qr.exam_id = $1
+      ORDER BY qr.generated_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) 
+      FROM qr_codes
+      WHERE exam_id = $1
+    `;
+
+    const [result, countResult] = await Promise.all([
+      db.query(query, [examId, limit, offset]),
+      db.query(countQuery, [examId])
+    ]);
+
+    return {
+      qr_codes: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(countResult.rows[0].count),
+        total_pages: Math.ceil(countResult.rows[0].count / limit)
+      }
+    };
+  }
+
+  /**
+   * Enregistrer la génération d'un QR code (pour audit)
+   */
+  static async logQRCodeGeneration(examId, studentId, generatedBy) {
+    const query = `
+      INSERT INTO qr_codes (exam_id, student_id, generated_by, generated_at, expires_at)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30 minutes')
+      RETURNING id
+    `;
+
+    const result = await db.query(query, [examId, studentId, generatedBy]);
+    return result.rows[0];
+  }
+  
 }
 
 module.exports = Exam;

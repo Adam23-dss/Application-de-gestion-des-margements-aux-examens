@@ -292,6 +292,194 @@ class ExamController {
       });
     }
   }
+
+  /**
+   * Générer un QR code pour un étudiant dans un examen
+   */
+  static async generateQRCode(req, res, next) {
+    try {
+      const { student_id } = req.body;
+      const { id: examId } = req.params;
+      const userId = req.user.id;
+
+      if (!student_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'MISSING_STUDENT_ID',
+          message: 'ID étudiant requis'
+        });
+      }
+
+      // Générer le QR code
+      const qrData = await Exam.generateQRCode(examId, student_id);
+
+      // Enregistrer dans l'historique (audit)
+      await Exam.logQRCodeGeneration(examId, student_id, userId);
+
+      res.json({
+        success: true,
+        message: 'QR code généré avec succès',
+        data: {
+          qr_data: qrData,
+          qr_string: JSON.stringify(qrData),
+          student_id: student_id,
+          exam_id: examId,
+          generated_at: qrData.generated_at,
+          expires_at: qrData.expires_at
+        }
+      });
+
+    } catch (error) {
+      console.error('Generate QR Code Error:', error);
+      
+      if (error.message.includes('non inscrit') || 
+          error.message.includes('non trouvé')) {
+        return res.status(404).json({
+          success: false,
+          error: 'NOT_FOUND',
+          message: error.message
+        });
+      }
+
+      next(error);
+    }
+  }
+
+  /**
+   * Générer des QR codes en masse
+   */
+  static async generateBulkQRCodes(req, res, next) {
+    try {
+      const { student_ids } = req.body;
+      const { id: examId } = req.params;
+      const userId = req.user.id;
+
+      if (!student_ids || !Array.isArray(student_ids) || student_ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'INVALID_STUDENT_IDS',
+          message: 'Liste d\'IDs étudiants requise'
+        });
+      }
+
+      // Limiter le nombre pour éviter la surcharge
+      if (student_ids.length > 100) {
+        return res.status(400).json({
+          success: false,
+          error: 'TOO_MANY_STUDENTS',
+          message: 'Maximum 100 étudiants à la fois'
+        });
+      }
+
+      // Générer les QR codes
+      const result = await Exam.generateBulkQRCodes(examId, student_ids);
+
+      // Enregistrer dans l'historique pour chaque étudiant
+      for (const studentId of Object.keys(result.qr_codes)) {
+        try {
+          await Exam.logQRCodeGeneration(examId, studentId, userId);
+        } catch (logError) {
+          console.warn(`Failed to log QR code for student ${studentId}:`, logError);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `QR codes générés: ${result.total_generated} succès, ${result.total_failed} échecs`,
+        data: {
+          qr_codes: result.qr_codes,
+          errors: result.errors,
+          total_generated: result.total_generated,
+          total_failed: result.total_failed
+        }
+      });
+
+    } catch (error) {
+      console.error('Generate Bulk QR Codes Error:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Vérifier un QR code scanné
+   */
+  static async verifyQRCode(req, res, next) {
+    try {
+      const { qr_data } = req.body;
+      const { id: examId } = req.params;
+
+      if (!qr_data) {
+        return res.status(400).json({
+          success: false,
+          error: 'MISSING_QR_DATA',
+          message: 'Données QR code requises'
+        });
+      }
+
+      // Vérifier le QR code
+      const verification = await Exam.verifyQRCode(qr_data, examId);
+
+      if (!verification.is_valid) {
+        return res.status(400).json({
+          success: false,
+          error: 'INVALID_QR_CODE',
+          message: verification.error,
+          data: verification
+        });
+      }
+
+      // Si déjà présent, retourner l'information
+      if (verification.existing_attendance) {
+        return res.json({
+          success: true,
+          message: 'QR code valide (déjà enregistré)',
+          data: {
+            ...verification,
+            already_attended: true,
+            attendance_status: verification.existing_attendance.status
+          }
+        });
+      }
+
+      // QR code valide, étudiant peut être marqué présent
+      res.json({
+        success: true,
+        message: 'QR code valide',
+        data: {
+          ...verification,
+          can_validate: true
+        }
+      });
+
+    } catch (error) {
+      console.error('Verify QR Code Error:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Obtenir l'historique des QR codes
+   */
+  static async getQRCodeHistory(req, res, next) {
+    try {
+      const { id: examId } = req.params;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+
+      const history = await Exam.getQRCodeHistory(examId, page, limit);
+
+      res.json({
+        success: true,
+        data: history.qr_codes,
+        pagination: history.pagination
+      });
+
+    } catch (error) {
+      console.error('Get QR Code History Error:', error);
+      next(error);
+    }
+  }
+
 }
 
 module.exports = ExamController;
