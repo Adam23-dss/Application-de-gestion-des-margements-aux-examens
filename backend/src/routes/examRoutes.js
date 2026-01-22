@@ -131,7 +131,7 @@ router.get('/:id/statistics',
  * @body    {student_id: string}
  */
 router.post('/:id/generate-qr',
-  authMiddleware.authenticate,
+  authMiddleware.authorize('admin', 'supervisor'),
   examController.generateQRCode
 );
 
@@ -155,6 +155,38 @@ router.post('/:id/generate-bulk-qr',
 router.post('/:id/verify-qr',
   authMiddleware.authorize('admin', 'supervisor'),
   examController.verifyQRCode
+);
+
+/**
+ * @route   POST /api/exams/:id/validate-qr
+ * @desc    Valider une présence via QR code
+ * @access  Private (admin, supervisor)
+ * @body    {qr_data: string}
+ */
+router.post('/:id/validate-qr',
+  authMiddleware.authorize('admin', 'supervisor'),
+  examController.validateFromQRCode
+);
+
+/**
+ * @route   GET /api/exams/:id/qr-history
+ * @desc    Obtenir l'historique des QR codes générés
+ * @access  Private (admin, supervisor)
+ * @query   page, limit
+ */
+router.get('/:id/qr-history',
+  authMiddleware.authorize('admin', 'supervisor'),
+  examController.getQRCodeHistory
+);
+
+/**
+ * @route   GET /api/exams/:id/active-qr-codes
+ * @desc    Obtenir les QR codes actifs (non expirés)
+ * @access  Private (admin, supervisor)
+ */
+router.get('/:id/active-qr-codes',
+  authMiddleware.authorize('admin', 'supervisor'),
+  examController.getActiveQRCodes
 );
 
 module.exports = router;

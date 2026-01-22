@@ -293,8 +293,9 @@ class ExamController {
     }
   }
 
-  /**
+/**
    * Générer un QR code pour un étudiant dans un examen
+   * POST /api/exams/:id/generate-qr
    */
   static async generateQRCode(req, res, next) {
     try {
@@ -311,22 +312,12 @@ class ExamController {
       }
 
       // Générer le QR code
-      const qrData = await Exam.generateQRCode(examId, student_id);
-
-      // Enregistrer dans l'historique (audit)
-      await Exam.logQRCodeGeneration(examId, student_id, userId);
+      const qrData = await Exam.generateQRCode(examId, student_id, userId);
 
       res.json({
         success: true,
         message: 'QR code généré avec succès',
-        data: {
-          qr_data: qrData,
-          qr_string: JSON.stringify(qrData),
-          student_id: student_id,
-          exam_id: examId,
-          generated_at: qrData.generated_at,
-          expires_at: qrData.expires_at
-        }
+        data: qrData
       });
 
     } catch (error) {
@@ -347,6 +338,7 @@ class ExamController {
 
   /**
    * Générer des QR codes en masse
+   * POST /api/exams/:id/generate-bulk-qr
    */
   static async generateBulkQRCodes(req, res, next) {
     try {
@@ -372,16 +364,7 @@ class ExamController {
       }
 
       // Générer les QR codes
-      const result = await Exam.generateBulkQRCodes(examId, student_ids);
-
-      // Enregistrer dans l'historique pour chaque étudiant
-      for (const studentId of Object.keys(result.qr_codes)) {
-        try {
-          await Exam.logQRCodeGeneration(examId, studentId, userId);
-        } catch (logError) {
-          console.warn(`Failed to log QR code for student ${studentId}:`, logError);
-        }
-      }
+      const result = await Exam.generateBulkQRCodes(examId, student_ids, userId);
 
       res.json({
         success: true,
@@ -402,6 +385,7 @@ class ExamController {
 
   /**
    * Vérifier un QR code scanné
+   * POST /api/exams/:id/verify-qr
    */
   static async verifyQRCode(req, res, next) {
     try {
@@ -436,7 +420,8 @@ class ExamController {
           data: {
             ...verification,
             already_attended: true,
-            attendance_status: verification.existing_attendance.status
+            attendance_status: verification.existing_attendance.status,
+            validation_time: verification.existing_attendance.validation_time
           }
         });
       }
@@ -458,7 +443,85 @@ class ExamController {
   }
 
   /**
+   * Valider une présence via QR code
+   * POST /api/exams/:id/validate-qr
+   */
+  static async validateFromQRCode(req, res, next) {
+    try {
+      const { qr_data } = req.body;
+      const { id: examId } = req.params;
+      const userId = req.user.id;
+
+      if (!qr_data) {
+        return res.status(400).json({
+          success: false,
+          error: 'MISSING_QR_DATA',
+          message: 'Données QR code requises'
+        });
+      }
+
+      // 1. Vérifier le QR code
+      const verification = await Exam.verifyQRCode(qr_data, examId);
+      
+      if (!verification.is_valid) {
+        return res.status(400).json({
+          success: false,
+          error: 'INVALID_QR',
+          message: verification.error
+        });
+      }
+
+      const { student } = verification;
+
+      // 2. Vérifier si déjà présent
+      const existingAttendance = await Attendance.findByExamAndStudent(
+        examId,
+        student.student_id
+      );
+
+      if (existingAttendance) {
+        return res.json({
+          success: true,
+          message: 'Étudiant déjà présent',
+          data: {
+            attendance: existingAttendance,
+            student: student,
+            already_present: true
+          }
+        });
+      }
+
+      // 3. Marquer présent
+      const attendance = await Attendance.create({
+        exam_id: examId,
+        student_id: student.student_id,
+        status: 'present',
+        validation_method: 'qr_code',
+        validated_by: userId
+      });
+
+      // 4. Mettre à jour l'historique QR
+      await Exam.markQRCodeAsScanned(examId, student.student_id, userId, attendance.id);
+
+      res.json({
+        success: true,
+        message: 'Présence validée par QR code',
+        data: {
+          attendance: attendance,
+          student: student,
+          qr_data: verification.qr_data
+        }
+      });
+
+    } catch (error) {
+      console.error('Validate from QR Code Error:', error);
+      next(error);
+    }
+  }
+
+  /**
    * Obtenir l'historique des QR codes
+   * GET /api/exams/:id/qr-history
    */
   static async getQRCodeHistory(req, res, next) {
     try {
@@ -480,6 +543,26 @@ class ExamController {
     }
   }
 
+  /**
+   * Obtenir les QR codes actifs
+   * GET /api/exams/:id/active-qr-codes
+   */
+  static async getActiveQRCodes(req, res, next) {
+    try {
+      const { id: examId } = req.params;
+
+      const activeQRCodes = await Exam.getActiveQRCodes(examId);
+
+      res.json({
+        success: true,
+        data: activeQRCodes
+      });
+
+    } catch (error) {
+      console.error('Get Active QR Codes Error:', error);
+      next(error);
+    }
+  }
 }
 
 module.exports = ExamController;
