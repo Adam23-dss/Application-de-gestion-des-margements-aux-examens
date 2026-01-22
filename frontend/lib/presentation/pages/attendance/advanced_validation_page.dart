@@ -117,7 +117,7 @@ class _AdvancedValidationPageState extends State<AdvancedValidationPage> {
                     ),
                     onChanged: (value) {
                       final provider = context.read<AttendanceProvider>();
-                      provider.searchQuery = value;
+                      provider.searchStudent(value);
                     },
                   ),
                 ),
