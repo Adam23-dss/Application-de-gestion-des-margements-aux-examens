@@ -2,6 +2,7 @@ const Exam = require('../models/Exam');
 const Course = require('../models/Course');
 const Room = require('../models/Room');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 
 class ExamController {
   // GET /api/exams - Liste paginée
@@ -476,7 +477,7 @@ class ExamController {
       // 2. Vérifier si déjà présent
       const existingAttendance = await Attendance.findByExamAndStudent(
         examId,
-        student.student_id
+        student.id
       );
 
       if (existingAttendance) {
@@ -494,14 +495,14 @@ class ExamController {
       // 3. Marquer présent
       const attendance = await Attendance.create({
         exam_id: examId,
-        student_id: student.student_id,
+        student_id: student.id,
         status: 'present',
         validation_method: 'qr_code',
         validated_by: userId
       });
 
       // 4. Mettre à jour l'historique QR
-      await Exam.markQRCodeAsScanned(examId, student.student_id, userId, attendance.id);
+      await Exam.markQRCodeAsScanned(examId, student.id, userId, attendance.id);
 
       res.json({
         success: true,

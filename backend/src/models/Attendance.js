@@ -1,6 +1,57 @@
 const db = require("../config/database");
 
 class Attendance {
+  /**
+   * Trouver une présence par examen et étudiant
+   */
+  static async findByExamAndStudent(examId, studentId) {
+    const query = `
+    SELECT * FROM attendance 
+    WHERE exam_id = $1 AND student_id = $2
+    ORDER BY validation_time DESC 
+    LIMIT 1
+  `;
+
+    const result = await db.query(query, [examId, studentId]);
+    return result.rows[0];
+  }
+
+  /**
+   * Valider une présence
+   */
+  static async validate(attendanceData) {
+    const {
+      exam_id,
+      student_id,
+      supervisor_id,
+      status = "present",
+      validation_method = "manual",
+    } = attendanceData;
+
+    // Vérifier si une présence existe déjà
+    const existing = await this.findByExamAndStudent(exam_id, student_id);
+
+    if (existing) {
+      // Mettre à jour la présence existante
+      return await this.update(existing.id, {
+        status,
+        validation_method,
+        validated_by: supervisor_id,
+        validation_time: new Date(),
+      });
+    } else {
+      // Créer une nouvelle présence
+      return await this.create({
+        exam_id,
+        student_id,
+        supervisor_id,
+        status,
+        validation_method,
+        validation_time: new Date(),
+      });
+    }
+  }
+
   // Valider une présence
   static async validate(data) {
     const {
@@ -10,7 +61,6 @@ class Attendance {
       status = "present",
       validation_method = "manual",
     } = data;
-
     const query = `
       INSERT INTO attendance (exam_id, student_id, supervisor_id, status, validation_method, validation_time)
       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
